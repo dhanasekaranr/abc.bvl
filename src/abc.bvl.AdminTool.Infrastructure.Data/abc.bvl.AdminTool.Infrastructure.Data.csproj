@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\abc.bvl.AdminTool.Domain\abc.bvl.AdminTool.Domain.csproj" />
+    <ProjectReference Include="..\abc.bvl.AdminTool.Application\abc.bvl.AdminTool.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.10" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" Version="9.23.26000" />
+  </ItemGroup>
+
+</Project>
