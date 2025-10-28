@@ -1,12 +1,16 @@
 using abc.bvl.AdminTool.Api.Configuration;
 using abc.bvl.AdminTool.Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace abc.bvl.AdminTool.Api.Services;
 
 public static class DatabaseConfigurationExtensions
 {
+    /// <summary>
+    /// Registers both Primary and Secondary DbContexts for dual-database routing
+    /// Uses keyed services (.NET 8+) to register multiple DbContext instances
+    /// </summary>
     public static IServiceCollection AddConfigurableDatabase(
         this IServiceCollection services, 
         IConfiguration configuration)
@@ -18,29 +22,64 @@ public static class DatabaseConfigurationExtensions
         services.Configure<DatabaseSettings>(
             configuration.GetSection(DatabaseSettings.SectionName));
 
-        switch (databaseSettings.Provider.ToUpperInvariant())
+        var provider = databaseSettings.Provider.ToUpperInvariant();
+        
+        if (provider != "ORACLE")
         {
-            case "ORACLE":
-                // Register DbContext with Oracle - uses primary by default
-                // For dual-database support, routing logic can be added via middleware
-                services.AddDbContext<AdminDbContext>(options =>
-                {
-                    var primaryConnectionString = configuration.GetConnectionString("AdminDb_Primary");
-                    options.UseOracle(primaryConnectionString);
-                    options.EnableSensitiveDataLogging(false);
-                    options.EnableDetailedErrors(false);
-                });
-                break;
-            
-            case "INMEMORY":
-            default:
-                services.AddDbContext<AdminDbContext>(options =>
-                {
-                    options.UseInMemoryDatabase($"AdminToolDb_{Guid.NewGuid()}");
-                    options.EnableSensitiveDataLogging(true);
-                });
-                break;
+            throw new InvalidOperationException(
+                $"Only Oracle provider is supported in production. Current provider: {provider}. " +
+                "For testing, use InMemory databases directly in test projects.");
         }
+
+        // Get connection strings
+        var primaryConnectionString = configuration.GetConnectionString("AdminDb_Primary");
+        var secondaryConnectionString = configuration.GetConnectionString("AdminDb_Secondary");
+
+        if (string.IsNullOrWhiteSpace(primaryConnectionString))
+        {
+            throw new InvalidOperationException("AdminDb_Primary connection string is required");
+        }
+
+        // Register PRIMARY DbContext (keyed service)
+        services.AddKeyedScoped<AdminDbContext>("Primary", (serviceProvider, key) =>
+        {
+            var optionsBuilder = new DbContextOptionsBuilder<AdminDbContext>();
+            optionsBuilder.UseOracle(primaryConnectionString);
+            optionsBuilder.EnableSensitiveDataLogging(false);
+            optionsBuilder.EnableDetailedErrors(false);
+            
+            return new AdminDbContext(optionsBuilder.Options);
+        });
+
+        // Register SECONDARY DbContext (keyed service) - if connection string provided
+        if (!string.IsNullOrWhiteSpace(secondaryConnectionString))
+        {
+            services.AddKeyedScoped<AdminDbContext>("Secondary", (serviceProvider, key) =>
+            {
+                var optionsBuilder = new DbContextOptionsBuilder<AdminDbContext>();
+                optionsBuilder.UseOracle(secondaryConnectionString);
+                optionsBuilder.EnableSensitiveDataLogging(false);
+                optionsBuilder.EnableDetailedErrors(false);
+                
+                return new AdminDbContext(optionsBuilder.Options);
+            });
+        }
+        else
+        {
+            // If no secondary connection, register Primary as Secondary fallback
+            services.AddKeyedScoped<AdminDbContext>("Secondary", (serviceProvider, key) =>
+            {
+                var optionsBuilder = new DbContextOptionsBuilder<AdminDbContext>();
+                optionsBuilder.UseOracle(primaryConnectionString);
+                optionsBuilder.EnableSensitiveDataLogging(false);
+                optionsBuilder.EnableDetailedErrors(false);
+                
+                return new AdminDbContext(optionsBuilder.Options);
+            });
+        }
+
+        // Register DbContextResolver for routing logic
+        services.AddScoped<IDbContextResolver, DbContextResolver>();
 
         return services;
     }

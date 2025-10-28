@@ -3,6 +3,7 @@ using abc.bvl.AdminTool.Application.Common.Interfaces;
 using abc.bvl.AdminTool.Infrastructure.Data.Context;
 using abc.bvl.AdminTool.Infrastructure.Data.Services;
 using abc.bvl.AdminTool.Infrastructure.Data.Repositories;
+using abc.bvl.AdminTool.Infrastructure.Replication.Extensions;
 using abc.bvl.AdminTool.Api.Configuration;
 using abc.bvl.AdminTool.Api.Services;
 using abc.bvl.AdminTool.Api.Middleware;
@@ -167,9 +168,12 @@ var databaseSettings = builder.Configuration
     .GetSection(DatabaseSettings.SectionName)
     .Get<DatabaseSettings>() ?? new DatabaseSettings();
 
-// Add MediatR
+// Add MediatR with pipeline behaviors
 builder.Services.AddMediatR(cfg => {
     cfg.RegisterServicesFromAssembly(typeof(GetScreenDefinitionsQuery).Assembly);
+    
+    // Add authorization pipeline behavior (runs before handlers)
+    cfg.AddOpenBehavior(typeof(abc.bvl.AdminTool.Application.Common.Behaviors.AuthorizationBehavior<,>));
 });
 
 // Add FluentValidation
@@ -177,15 +181,22 @@ builder.Services.AddValidatorsFromAssemblyContaining<ScreenDefnDtoValidator>();
 
 // Add application services
 builder.Services.AddScoped<IRequestContext, RequestContextAccessor>();
+
+// Register UnitOfWork with DbContextResolver factory
+builder.Services.AddScoped<IUnitOfWork>(serviceProvider =>
+{
+    var resolver = serviceProvider.GetRequiredService<IDbContextResolver>();
+    return new UnitOfWork(() => resolver.GetDbContext());
+});
+
 builder.Services.AddScoped<IUnitOfWorkFactory, UnitOfWorkFactory>();
 builder.Services.AddScoped<IScreenDefinitionRepository, ScreenDefinitionRepository>();
+builder.Services.AddScoped<IScreenPilotRepository, ScreenPilotRepository>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IUserPermissionService, UserPermissionService>();
 
-// Add database seeder - only if seeding is enabled
-if (databaseSettings.EnableSeeding)
-{
-    builder.Services.AddHostedService<DatabaseSeeder>();
-}
+// Add Outbox pattern for dual-database replication
+builder.Services.AddOutboxPattern(builder.Configuration);
 
 var app = builder.Build();
 

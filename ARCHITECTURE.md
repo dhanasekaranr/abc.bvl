@@ -123,27 +123,44 @@ AdminTool/
 │   │   │   └── DevTokenController.cs               # JWT token generation (dev only)
 │   │   ├── Middleware/
 │   │   │   ├── GlobalExceptionMiddleware.cs        # Centralized exception handling
-│   │   │   └── SecurityHeadersMiddleware.cs        # OWASP security headers
+│   │   │   └── SecurityMiddleware.cs               # OWASP security headers (SecurityHeadersMiddleware)
 │   │   ├── Filters/
 │   │   │   └── EnrichResponseFilter.cs             # Auto-enriches responses with user/access info
 │   │   ├── Validation/
 │   │   │   ├── ScreenDefnDtoValidator.cs           # FluentValidation validators
 │   │   │   └── SecurityValidationAttributes.cs     # Custom validation attributes
 │   │   ├── Configuration/
-│   │   │   ├── JwtSettings.cs                      # JWT configuration
-│   │   │   └── SecuritySettings.cs                 # Security configuration
+│   │   │   ├── JwtSettings.cs                      # JWT configuration (in SecuritySettings.cs)
+│   │   │   ├── SecuritySettings.cs                 # Security configuration
+│   │   │   └── DatabaseSettings.cs                 # Database configuration
+│   │   ├── Services/
+│   │   │   ├── JwtTokenService.cs                  # JWT token generation service
+│   │   │   └── DatabaseConfigurationExtensions.cs  # Database provider configuration
 │   │   └── Program.cs                              # Application entry point & DI setup
 │   │
 │   ├── abc.bvl.AdminTool.Application/              # 📋 Application Layer (Use Cases)
 │   │   ├── ScreenDefinition/
-│   │   │   └── Queries/
-│   │   │       ├── GetScreenDefinitionsQuery.cs    # CQRS Query
-│   │   │       └── GetScreenDefinitionsHandler.cs  # Query Handler
+│   │   │   ├── Queries/
+│   │   │   │   └── GetScreenDefinitionsQuery.cs    # CQRS Query + Handler
+│   │   │   └── Commands/
+│   │   │       ├── UpsertScreenDefinitionCommand.cs # Create/Update Command + Handler
+│   │   │       └── DeleteScreenDefinitionCommand.cs # Delete Command + Handler
+│   │   ├── ScreenPilot/
+│   │   │   ├── Queries/
+│   │   │   │   └── GetUserScreenPilotsQuery.cs     # CQRS Query + Handler
+│   │   │   └── Commands/
+│   │   │       └── UpsertScreenPilotCommand.cs     # Create/Update Command + Handler
 │   │   └── Common/
-│   │       └── Interfaces/
-│   │           ├── IUnitOfWork.cs                  # Transaction management
-│   │           ├── IRequestContext.cs              # Request context abstraction
-│   │           └── IAdminDbContext.cs              # Database context interface
+│   │       ├── Interfaces/
+│   │       │   ├── IUnitOfWork.cs                  # Transaction management
+│   │       │   ├── IUnitOfWorkFactory.cs           # UnitOfWork factory
+│   │       │   ├── IRequestContext.cs              # Request context abstraction
+│   │       │   ├── IAdminDbContext.cs              # Database context interface
+│   │       │   ├── IScreenDefinitionRepository.cs  # Screen definition repository interface
+│   │       │   ├── IScreenPilotRepository.cs       # Screen pilot repository interface
+│   │       │   └── IUserPermissionService.cs       # User permission service interface
+│   │       └── Behaviors/
+│   │           └── AuthorizationBehavior.cs        # MediatR pipeline behavior for authorization
 │   │
 │   ├── abc.bvl.AdminTool.Domain/                   # 🎯 Domain Layer (Business Logic)
 │   │   └── Entities/
@@ -166,29 +183,40 @@ AdminTool/
 │   │   ├── Repositories/
 │   │   │   ├── GenericRepository.cs                # Generic CRUD operations
 │   │   │   ├── ScreenDefinitionRepository.cs       # Specific repository with custom queries
-│   │   │   ├── CompiledQueries.cs                  # EF Core compiled queries for performance
-│   │   │   └── PagedResult.cs                      # Pagination result model
+│   │   │   ├── ScreenPilotRepository.cs            # Screen pilot repository
+│   │   │   └── CompiledQueries.cs                  # EF Core compiled queries for performance
 │   │   └── Services/
 │   │       ├── UnitOfWork.cs                       # Transaction management implementation
 │   │       ├── UnitOfWorkFactory.cs                # Factory for creating UnitOfWork
-│   │       ├── RequestContextAccessor.cs           # Request context implementation
-│   │       └── DatabaseSeeder.cs                   # Initial data seeding
+│   │       └── RequestContextAccessor.cs           # Request context implementation
 │   │
-│   ├── abc.bvl.AdminTool.Infrastructure.Replication/ # 🔄 Replication Layer
-│   │   └── OutboxWorker.cs                         # Background worker for outbox processing
+│   ├── abc.bvl.AdminTool.Infrastructure.Replication/ # 🔄 Replication Layer (Outbox Pattern)
+│   │   ├── Configuration/
+│   │   │   └── OutboxSettings.cs                   # Outbox configuration model
+│   │   ├── Interfaces/
+│   │   │   ├── IOutboxPublisher.cs                 # Publisher interface
+│   │   │   └── IOutboxRepository.cs                # Repository interface
+│   │   ├── Repositories/
+│   │   │   └── OutboxRepository.cs                 # Outbox data access
+│   │   ├── Services/
+│   │   │   ├── OutboxPublisher.cs                  # Event publisher service
+│   │   │   └── OutboxProcessor.cs                  # Background processor (IHostedService)
+│   │   ├── Extensions/
+│   │   │   └── ServiceCollectionExtensions.cs      # DI registration helper
+│   │   └── README.md                               # Outbox pattern documentation
 │   │
 │   └── abc.bvl.AdminTool.Contracts/                # 📦 Contracts Layer (DTOs)
 │       ├── Admin/
-│       │   ├── AdminLookupDtos.cs                  # Country, State DTOs
-│       │   └── BaseAdminDto.cs                     # Base DTO
+│       │   └── AdminLookupDtos.cs                  # Country, State DTOs
 │       ├── ScreenDefinition/
 │       │   └── ScreenDefnDto.cs                    # Screen definition DTO
 │       ├── ScreenPilot/
 │       │   └── ScreenPilotDto.cs                   # Screen pilot DTO
 │       └── Common/
 │           ├── ApiResponse.cs                      # Standard API response wrapper
-│           ├── PagedResult.cs                      # Paginated response
-│           ├── SingleResult.cs                     # Single item response
+│           ├── BasePageDto.cs                      # Base DTO with user/access info
+│           ├── PagedResult.cs                      # Paginated response (in BasePageDto.cs)
+│           ├── BulkOperationResult.cs              # Bulk operation response
 │           └── PaginationRequest.cs                # Pagination parameters
 │
 └── tests/

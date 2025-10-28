@@ -1,4 +1,5 @@
 using abc.bvl.AdminTool.Application.ScreenDefinition.Queries;
+using abc.bvl.AdminTool.Application.ScreenDefinition.Commands;
 using abc.bvl.AdminTool.Contracts.Common;
 using abc.bvl.AdminTool.Contracts.ScreenDefinition;
 using abc.bvl.AdminTool.Api.Validation;
@@ -128,6 +129,7 @@ public class ScreenDefinitionController : BaseApiController
 
     /// <summary>
     /// Create or update a screen definition
+    /// Handler determines create vs update based on data existence in repository
     /// </summary>
     /// <param name="request">Screen definition data with validation</param>
     /// <param name="cancellationToken">Cancellation token</param>
@@ -159,29 +161,23 @@ public class ScreenDefinitionController : BaseApiController
         try
         {
             var currentUser = GetCurrentUserId();
-            var isUpdate = request.Id.HasValue && request.Id > 0;
             
-            // For now, return the same object with generated values
-            // In real implementation, you'd use a command handler:
-            // var result = isUpdate 
-            //     ? await _mediator.Send(new UpdateScreenDefinitionCommand(request), cancellationToken)
-            //     : await _mediator.Send(new CreateScreenDefinitionCommand(request), cancellationToken);
-            
-            var result = request with 
-            { 
-                Id = request.Id ?? DateTimeOffset.UtcNow.Ticks, // Generate ID if null
-                CreatedAt = request.CreatedAt ?? DateTimeOffset.UtcNow,
-                CreatedBy = request.CreatedBy ?? currentUser,
-                UpdatedAt = DateTimeOffset.UtcNow,
-                UpdatedBy = currentUser
+            // Handler determines create vs update based on data existence
+            var command = new UpsertScreenDefinitionCommand
+            {
+                Id = request.Id,
+                ScreenName = request.Name,
+                Status = request.Status,
+                RequestedBy = currentUser
             };
             
-            var statusCode = isUpdate ? StatusCodes.Status200OK : StatusCodes.Status201Created;
-            var action = isUpdate ? "updated" : "created";
+            var result = await _mediator.Send(command, cancellationToken);
             
-            LogOperation($"Screen definition {result.Id} {action}", currentUser);
+            // Return 201 for new entities, 200 for updates
+            var statusCode = request.Id.HasValue ? StatusCodes.Status200OK : StatusCodes.Status201Created;
             
-            // Use base controller helper for clean response
+            LogOperation($"Screen definition {result.Id} processed successfully", currentUser);
+            
             return StatusCode(statusCode, SingleSuccess(result));
         }
         catch (Exception ex)
@@ -209,11 +205,17 @@ public class ScreenDefinitionController : BaseApiController
     {
         try
         {
-            // In real implementation, you'd use a command handler
-            // await _mediator.Send(new DeleteScreenDefinitionCommand(id), cancellationToken);
-            await Task.CompletedTask;
+            var currentUser = GetCurrentUserId();
             
-            LogOperation($"Screen definition {id} deleted");
+            var command = new DeleteScreenDefinitionCommand
+            {
+                Id = id,
+                DeletedBy = currentUser
+            };
+            
+            await _mediator.Send(command, cancellationToken);
+            
+            LogOperation($"Screen definition {id} deleted", currentUser);
             return NoContent();
         }
         catch (KeyNotFoundException)

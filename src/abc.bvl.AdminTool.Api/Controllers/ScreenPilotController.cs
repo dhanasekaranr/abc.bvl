@@ -1,159 +1,101 @@
+using abc.bvl.AdminTool.Application.ScreenPilot.Queries;
+using abc.bvl.AdminTool.Application.ScreenPilot.Commands;
 using abc.bvl.AdminTool.Contracts.Common;
 using abc.bvl.AdminTool.Contracts.ScreenPilot;
 using abc.bvl.AdminTool.Api.Controllers.Base;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace abc.bvl.AdminTool.Api.Controllers;
 
+/// <summary>
+/// Screen Pilot (user-screen assignment) management controller
+/// </summary>
 [ApiController]
 [Route("api/v1/admin/screen-pilot")]
+[Authorize(Roles = "Admin,ScreenManager")]
 public class ScreenPilotController : BaseApiController
 {
-    // For now, using mock data - you'd inject your services here
-    private static readonly List<ScreenPilotDto> _mockData = new()
-    {
-        new ScreenPilotDto(1, 1, "john.doe", 1, DateTimeOffset.UtcNow, "admin", "ABC123", "Orders Management"),
-        new ScreenPilotDto(2, 1, "jane.smith", 1, DateTimeOffset.UtcNow, "admin", "DEF456", "Orders Management"),
-        new ScreenPilotDto(3, 2, "john.doe", 1, DateTimeOffset.UtcNow, "admin", "GHI789", "Customer Portal"),
-    };
+    private readonly IMediator _mediator;
 
-    public ScreenPilotController(ILogger<ScreenPilotController> logger) : base(logger)
+    public ScreenPilotController(
+        IMediator mediator,
+        ILogger<ScreenPilotController> logger) : base(logger)
     {
+        _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
     }
 
     /// <summary>
     /// Get all screen pilot assignments for a specific user
     /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of screen assignments for the user</returns>
     [HttpGet("users/{userId}/pilot")]
-    public async Task<ActionResult<SingleResult<IEnumerable<ScreenPilotDto>>>> GetUserScreenPilots(string userId)
+    [ProducesResponseType(typeof(SingleResult<IEnumerable<ScreenPilotDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<SingleResult<IEnumerable<ScreenPilotDto>>>> GetUserScreenPilots(
+        string userId,
+        CancellationToken cancellationToken = default)
     {
-        await Task.CompletedTask; // Simulate async operation
-        
-        var userPilots = _mockData.Where(p => p.UserId == userId);
-        
-        // Simple! User/Access/CorrelationId auto-populated by EnrichResponseFilter
-        return Ok(SingleSuccess(userPilots));
-    }
-
-    /// <summary>
-    /// Get all user assignments for a specific screen
-    /// </summary>
-    [HttpGet("screens/{screenId}/pilot")]
-    public async Task<ActionResult<SingleResult<IEnumerable<ScreenPilotDto>>>> GetScreenPilots(long screenId)
-    {
-        await Task.CompletedTask; // Simulate async operation
-        
-        var screenPilots = _mockData.Where(p => p.ScreenDefnId == screenId);
-        
-        // Simple! User/Access/CorrelationId auto-populated by EnrichResponseFilter
-        return Ok(SingleSuccess(screenPilots));
-    }
-
-    /// <summary>
-    /// Get a specific screen pilot assignment
-    /// </summary>
-    [HttpGet("pilot/{id}")]
-    public async Task<ActionResult<SingleResult<ScreenPilotDto>>> GetScreenPilot(long id)
-    {
-        await Task.CompletedTask; // Simulate async operation
-        
-        var pilot = _mockData.FirstOrDefault(p => p.Id == id);
-        if (pilot == null)
+        try
         {
-            return NotFound();
+            var query = new GetUserScreenPilotsQuery(userId);
+            var userPilots = await _mediator.Send(query, cancellationToken);
+            
+            LogOperation($"Retrieved {userPilots.Count()} screen pilots for user {userId}");
+            return Ok(SingleSuccess(userPilots));
         }
-        
-        // Simple! User/Access/CorrelationId auto-populated by EnrichResponseFilter
-        return Ok(SingleSuccess(pilot));
+        catch (Exception ex)
+        {
+            LogError(ex, $"Error retrieving screen pilots for user {userId}");
+            throw;
+        }
     }
 
     /// <summary>
     /// Create or update screen pilot assignment
-    /// Same DTO for both create and update operations
+    /// Handler determines create vs update based on data existence
     /// </summary>
-    [HttpPut("pilot")]
+    /// <param name="request">Screen pilot data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Created/updated screen pilot</returns>
+    [HttpPut("pilots")]
+    [ProducesResponseType(typeof(SingleResult<ScreenPilotDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SingleResult<ScreenPilotDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<SingleResult<ScreenPilotDto>>> UpsertScreenPilot(
-        [FromBody] ScreenPilotDto request)
+        [FromBody] ScreenPilotDto request,
+        CancellationToken cancellationToken = default)
     {
-        await Task.CompletedTask; // Simulate async operation
-        
-        // Create operation (Id is null)
-        if (request.Id == null)
+        try
         {
-            var newPilot = request with 
-            { 
-                Id = _mockData.Max(p => p.Id ?? 0) + 1,
-                UpdatedAt = DateTimeOffset.UtcNow,
-                UpdatedBy = GetCurrentUserId(),
-                RowVersion = Guid.NewGuid().ToString()[..8]
+            var currentUser = GetCurrentUserId();
+            
+            var command = new UpsertScreenPilotCommand
+            {
+                Id = request.Id,
+                ScreenDefnId = request.ScreenDefnId,
+                UserId = request.UserId,
+                Status = request.Status,
+                RequestedBy = currentUser
             };
             
-            _mockData.Add(newPilot);
+            var result = await _mediator.Send(command, cancellationToken);
             
-            // Simple! User/Access/CorrelationId auto-populated by EnrichResponseFilter
-            return CreatedAtAction(nameof(GetScreenPilot), new { id = newPilot.Id }, SingleSuccess(newPilot));
+            var statusCode = request.Id.HasValue ? StatusCodes.Status200OK : StatusCodes.Status201Created;
+            LogOperation($"Screen pilot {result.Id} processed successfully", currentUser);
+            
+            return StatusCode(statusCode, SingleSuccess(result));
         }
-        
-        // Update operation (Id is provided)
-        var existingIndex = _mockData.FindIndex(p => p.Id == request.Id);
-        if (existingIndex == -1)
+        catch (Exception ex)
         {
-            return NotFound();
+            LogError(ex, "Error upserting screen pilot");
+            throw;
         }
-        
-        var updatedPilot = request with 
-        { 
-            UpdatedAt = DateTimeOffset.UtcNow,
-            UpdatedBy = GetCurrentUserId(),
-            RowVersion = Guid.NewGuid().ToString()[..8]
-        };
-        
-        _mockData[existingIndex] = updatedPilot;
-        
-        // Simple! User/Access/CorrelationId auto-populated by EnrichResponseFilter
-        return Ok(SingleSuccess(updatedPilot));
-    }
-
-    /// <summary>
-    /// Delete screen pilot assignment
-    /// Simple ID-based deletion
-    /// </summary>
-    [HttpDelete("pilot/{id}")]
-    public async Task<ActionResult> DeleteScreenPilot(long id)
-    {
-        await Task.CompletedTask; // Simulate async operation
-        
-        var pilot = _mockData.FirstOrDefault(p => p.Id == id);
-        if (pilot == null)
-        {
-            return NotFound();
-        }
-        
-        _mockData.Remove(pilot);
-        return NoContent();
-    }
-
-    /// <summary>
-    /// Alternative delete with DTO (includes concurrency check)
-    /// </summary>
-    [HttpDelete("pilot")]
-    public async Task<ActionResult> DeleteScreenPilotWithConcurrency([FromBody] ScreenPilotDto request)
-    {
-        await Task.CompletedTask; // Simulate async operation
-        
-        var pilot = _mockData.FirstOrDefault(p => p.Id == request.Id);
-        if (pilot == null)
-        {
-            return NotFound();
-        }
-        
-        // Check concurrency (RowVersion)
-        if (pilot.RowVersion != request.RowVersion)
-        {
-            return Conflict("The record has been modified by another user.");
-        }
-        
-        _mockData.Remove(pilot);
-        return NoContent();
     }
 }

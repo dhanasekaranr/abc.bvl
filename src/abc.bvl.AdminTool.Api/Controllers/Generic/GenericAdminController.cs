@@ -235,23 +235,3 @@ public interface IGenericAdminService<TEntity, TDto>
     Task<bool> DeleteAsync(long id, string deletedBy);
     Task<BulkOperationResult<TDto>> BulkUpsertAsync(IEnumerable<TDto> dtos, string operatedBy);
 }
-
-/// <summary>
-/// Generic pagination result
-/// </summary>
-public record PagedResult<T>(
-    IEnumerable<T> Items,
-    int TotalCount,
-    int PageNumber,
-    int PageSize,
-    int TotalPages);
-
-/// <summary>
-/// Bulk operation result
-/// </summary>
-public record BulkOperationResult<T>(
-    int Created,
-    int Updated,
-    int Errors,
-    IEnumerable<string> ErrorMessages,
-    IEnumerable<T> Results);

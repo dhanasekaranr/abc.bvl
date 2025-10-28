@@ -3,42 +3,59 @@ using abc.bvl.AdminTool.Infrastructure.Data.Context;
 
 namespace abc.bvl.AdminTool.Infrastructure.Data.Services;
 
+/// <summary>
+/// Unit of Work implementation that resolves DbContext dynamically
+/// Uses DbContextResolver to get the appropriate database (Primary/Secondary) based on request context
+/// </summary>
 public class UnitOfWork : IUnitOfWork
 {
-    private readonly AdminDbContext _context;
+    private readonly Func<AdminDbContext> _contextFactory;
 
-    public UnitOfWork(AdminDbContext context)
+    /// <summary>
+    /// Constructor for dependency injection with DbContextResolver (recommended)
+    /// </summary>
+    public UnitOfWork(Func<AdminDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
-    public async Task<TResult> ExecuteAsync<TResult>(Func<IAdminDbContext, CancellationToken, Task<TResult>> operation, CancellationToken cancellationToken = default)
+    public async Task<TResult> ExecuteAsync<TResult>(
+        Func<IAdminDbContext, CancellationToken, Task<TResult>> operation, 
+        CancellationToken cancellationToken = default)
     {
-        await _context.BeginTransactionAsync(cancellationToken);
+        // Resolve DbContext at execution time (supports dynamic routing)
+        var context = _contextFactory();
+        
+        await context.BeginTransactionAsync(cancellationToken);
         try
         {
-            var result = await operation(_context, cancellationToken);
-            await _context.CommitTransactionAsync(cancellationToken);
+            var result = await operation(context, cancellationToken);
+            await context.CommitTransactionAsync(cancellationToken);
             return result;
         }
         catch
         {
-            await _context.RollbackTransactionAsync(cancellationToken);
+            await context.RollbackTransactionAsync(cancellationToken);
             throw;
         }
     }
 
-    public async Task ExecuteAsync(Func<IAdminDbContext, CancellationToken, Task> operation, CancellationToken cancellationToken = default)
+    public async Task ExecuteAsync(
+        Func<IAdminDbContext, CancellationToken, Task> operation, 
+        CancellationToken cancellationToken = default)
     {
-        await _context.BeginTransactionAsync(cancellationToken);
+        // Resolve DbContext at execution time (supports dynamic routing)
+        var context = _contextFactory();
+        
+        await context.BeginTransactionAsync(cancellationToken);
         try
         {
-            await operation(_context, cancellationToken);
-            await _context.CommitTransactionAsync(cancellationToken);
+            await operation(context, cancellationToken);
+            await context.CommitTransactionAsync(cancellationToken);
         }
         catch
         {
-            await _context.RollbackTransactionAsync(cancellationToken);
+            await context.RollbackTransactionAsync(cancellationToken);
             throw;
         }
     }

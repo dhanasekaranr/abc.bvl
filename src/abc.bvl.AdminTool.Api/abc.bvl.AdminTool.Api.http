@@ -1,6 +1,0 @@
-@abc.bvl.AdminTool.Api_HostAddress = http://localhost:5092
-
-GET {{abc.bvl.AdminTool.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

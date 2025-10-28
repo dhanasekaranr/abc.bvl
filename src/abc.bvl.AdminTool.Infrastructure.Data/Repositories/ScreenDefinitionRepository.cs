@@ -57,6 +57,12 @@ public class ScreenDefinitionRepository : IScreenDefinitionRepository
         return result;
     }
 
+    public async Task<ScreenDefinition?> GetEntityByIdAsync(long id, CancellationToken cancellationToken = default)
+    {
+        return await _context.ScreenDefinitions
+            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+    }
+
     public async Task<ScreenDefinition> CreateAsync(ScreenDefinition screenDefinition, CancellationToken cancellationToken = default)
     {
         _context.ScreenDefinitions.Add(screenDefinition);
