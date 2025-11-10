@@ -1,4 +1,5 @@
 using abc.bvl.AdminTool.Infrastructure.Data.Context;
+using abc.bvl.AdminTool.Infrastructure.Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -10,32 +11,31 @@ namespace abc.bvl.AdminTool.Tests.Integration;
 /// </summary>
 public class DatabaseFixture : IDisposable
 {
-    public AdminDbContext Context { get; }
+    public AdminDbPrimaryContext Context { get; }
+    public ICurrentDbContextProvider ContextProvider { get; }
     private readonly string _connectionString;
 
     public DatabaseFixture()
     {
-        // Load configuration
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.Integration.json", optional: true)
             .AddEnvironmentVariables()
             .Build();
 
-        // Get connection string - fallback to environment variable
         _connectionString = configuration.GetConnectionString("AdminDb_Integration") 
             ?? Environment.GetEnvironmentVariable("ADMIN_DB_INTEGRATION_CONNECTION")
             ?? throw new InvalidOperationException(
                 "Integration test database connection string not found. " +
                 "Set ADMIN_DB_INTEGRATION_CONNECTION environment variable or configure appsettings.Integration.json");
 
-        // Configure DbContext with Oracle
-        var optionsBuilder = new DbContextOptionsBuilder<AdminDbContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<AdminDbPrimaryContext>();
         optionsBuilder.UseOracle(_connectionString);
+        Context = new AdminDbPrimaryContext(optionsBuilder.Options);
 
-        Context = new AdminDbContext(optionsBuilder.Options);
+        // Provide a test context provider that always returns this context
+        ContextProvider = new TestDbContextProvider(Context);
 
-        // Ensure database is accessible
         try
         {
             Context.Database.CanConnect();
@@ -45,6 +45,14 @@ public class DatabaseFixture : IDisposable
             throw new InvalidOperationException(
                 $"Cannot connect to integration test database. Ensure Oracle DB is accessible. Error: {ex.Message}", ex);
         }
+    }
+
+    private class TestDbContextProvider : ICurrentDbContextProvider
+    {
+        private readonly AdminDbPrimaryContext _context;
+        public TestDbContextProvider(AdminDbPrimaryContext context) => _context = context;
+        public AdminDbContext GetContext() => _context;
+        public void SetContextType(DatabaseContextType contextType) { /* no-op for tests */ }
     }
 
     /// <summary>

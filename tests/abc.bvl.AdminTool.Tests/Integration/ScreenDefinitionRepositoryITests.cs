@@ -18,7 +18,7 @@ public class ScreenDefinitionRepositoryITests : IAsyncLifetime
     public ScreenDefinitionRepositoryITests(DatabaseFixture fixture)
     {
         _fixture = fixture;
-        _repository = new ScreenDefinitionRepository(_fixture.Context);
+        _repository = new ScreenDefinitionRepository(_fixture.ContextProvider);
     }
 
     public async Task InitializeAsync()
