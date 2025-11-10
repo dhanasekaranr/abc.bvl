@@ -12,8 +12,8 @@ public class OutboxMessageConfiguration : IEntityTypeConfiguration<OutboxMessage
 {
     public void Configure(EntityTypeBuilder<OutboxMessage> builder)
     {
-        // Map to Oracle table in APP_USER schema
-        builder.ToTable("CVLWEBTOOLS_ADMINTOOLOUTBOX", "APP_USER");
+        // Map to Oracle table in default schema
+        builder.ToTable("CVLWEBTOOLS_ADMINTOOLOUTBOX");
 
         // Primary Key
         builder.HasKey(x => x.Id);

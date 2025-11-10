@@ -1,5 +1,6 @@
 using abc.bvl.AdminTool.Application.Common.Interfaces;
 using abc.bvl.AdminTool.Infrastructure.Data.Context;
+using abc.bvl.AdminTool.Infrastructure.Data.Interfaces;
 using abc.bvl.AdminTool.Infrastructure.Data.Services;
 using abc.bvl.AdminTool.Infrastructure.Data.Repositories;
 using abc.bvl.AdminTool.Infrastructure.Replication.Extensions;
@@ -176,11 +177,11 @@ builder.Services.AddMediatR(cfg => {
 // Add application services
 builder.Services.AddScoped<IRequestContext, RequestContextAccessor>();
 
-// Register UnitOfWork with DbContextResolver factory
+// Register UnitOfWork with CurrentDbContextProvider
 builder.Services.AddScoped<IUnitOfWork>(serviceProvider =>
 {
-    var resolver = serviceProvider.GetRequiredService<IDbContextResolver>();
-    return new UnitOfWork(() => resolver.GetDbContext());
+    var contextProvider = serviceProvider.GetRequiredService<ICurrentDbContextProvider>();
+    return new UnitOfWork(() => contextProvider.GetContext());
 });
 
 builder.Services.AddScoped<IUnitOfWorkFactory, UnitOfWorkFactory>();
@@ -240,7 +241,10 @@ if (securitySettings.EnableCors)
     app.UseCors();
 }
 
-// 8. Swagger (development only or secure production setup)
+// 8. Database Routing Middleware - must be before authentication
+app.UseDatabaseRouting();
+
+// 9. Swagger (development only or secure production setup)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -252,14 +256,14 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// 9. Authentication & Authorization
+// 10. Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 10. Controllers
+// 11. Controllers
 app.MapControllers();
 
-// 11. Health checks (optional)
+// 12. Health checks (optional)
 app.MapGet("/health", () => new { Status = "Healthy", Timestamp = DateTime.UtcNow });
 
 // Log startup completion

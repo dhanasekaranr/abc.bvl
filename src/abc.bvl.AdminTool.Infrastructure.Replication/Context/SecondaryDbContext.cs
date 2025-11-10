@@ -42,40 +42,14 @@ public class SecondaryDbContext : DbContext
             }
         }
 
-        // ScreenDefinition
-        modelBuilder.Entity<ScreenDefinition>(entity =>
-        {
-            entity.ToTable("ADMIN_SCREENDEFN", "CVLWEBTOOLS");
-            entity.HasKey(e => e.ScreenGk);
-            entity.Property(e => e.ScreenGk).HasColumnName("SCREEN_GK");
-            entity.Property(e => e.ScreenName).HasColumnName("SCREENNAME").HasMaxLength(50).IsRequired();
-            entity.Property(e => e.StatusId).HasColumnName("STATUSID").IsRequired();
-            entity.Property(e => e.CreatedDt).HasColumnName("CREATEDDT").IsRequired();
-            entity.Property(e => e.CreatedBy).HasColumnName("CREATEDBY").IsRequired();
-            entity.Property(e => e.UpdatedDt).HasColumnName("UPDATEDDT");
-            entity.Property(e => e.UpdatedBy).HasColumnName("UPDATEDBY");
-        });
-
-        // ScreenPilot
-        modelBuilder.Entity<ScreenPilot>(entity =>
-        {
-            entity.ToTable("ADMIN_SCREENPILOT", "CVLWEBTOOLS");
-            entity.HasKey(e => e.ScreenPilotGk);
-            entity.Property(e => e.ScreenPilotGk).HasColumnName("SCREENPILOT_GK");
-            entity.Property(e => e.NbUserGk).HasColumnName("NBUSER_GK").IsRequired();
-            entity.Property(e => e.ScreenGk).HasColumnName("SCREEN_GK").IsRequired();
-            entity.Property(e => e.StatusId).HasColumnName("STATUSID").IsRequired();
-            entity.Property(e => e.DualMode).HasColumnName("DUALMODE").IsRequired();
-            entity.Property(e => e.CreatedDt).HasColumnName("CREATEDDT").IsRequired();
-            entity.Property(e => e.CreatedBy).HasColumnName("CREATEDBY").IsRequired();
-            entity.Property(e => e.UpdatedDt).HasColumnName("UPDATEDDT");
-            entity.Property(e => e.UpdatedBy).HasColumnName("UPDATEDBY");
-        });
+        // Use shared configuration classes for mapping
+        modelBuilder.ApplyConfiguration(new abc.bvl.AdminTool.Infrastructure.Data.Configurations.ScreenDefinitionConfiguration());
+        modelBuilder.ApplyConfiguration(new abc.bvl.AdminTool.Infrastructure.Data.Configurations.ScreenPilotConfiguration());
 
         // Country
         modelBuilder.Entity<Country>(entity =>
         {
-            entity.ToTable("COUNTRY", "ADMIN");
+            entity.ToTable("COUNTRY");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.Code).HasColumnName("CODE").HasMaxLength(10).IsRequired();
@@ -90,7 +64,7 @@ public class SecondaryDbContext : DbContext
         // State
         modelBuilder.Entity<State>(entity =>
         {
-            entity.ToTable("STATE", "ADMIN");
+            entity.ToTable("STATE");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.Code).HasColumnName("CODE").HasMaxLength(10).IsRequired();

@@ -1,5 +1,6 @@
 using abc.bvl.AdminTool.Domain.Entities.Base;
 using abc.bvl.AdminTool.Infrastructure.Data.Context;
+using abc.bvl.AdminTool.Infrastructure.Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
@@ -44,14 +45,14 @@ public interface IGenericRepository<T> where T : BaseAdminEntity
 /// </summary>
 public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEntity, new()
 {
-    private readonly AdminDbContext _context;
-    private readonly DbSet<T> _dbSet;
+    private readonly ICurrentDbContextProvider ContextProvider;
+    private AdminDbContext Context => ContextProvider.GetContext();
+    private DbSet<T> DbSet => Context.Set<T>();
     private readonly ILogger<GenericRepository<T>> _logger;
 
-    public GenericRepository(AdminDbContext context, ILogger<GenericRepository<T>> logger)
+    public GenericRepository(ICurrentDbContextProvider contextProvider, ILogger<GenericRepository<T>> logger)
     {
-        _context = context;
-        _dbSet = context.Set<T>();
+        ContextProvider = contextProvider;
         _logger = logger;
     }
 
@@ -60,17 +61,17 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
     public virtual async Task<T?> GetByIdAsync(long id)
     {
         // Use compiled query for better performance
-        return await CompiledQueries<T>.GetById(_context, id);
+        return await CompiledQueries<T>.GetById(Context, id);
     }
 
     public virtual async Task<IEnumerable<T>> GetAllAsync()
     {
-        return await _dbSet.Where(x => x.Status == 1).ToListAsync();
+        return await DbSet.Where(x => x.Status == 1).ToListAsync();
     }
 
     public virtual async Task<IEnumerable<T>> GetByStatusAsync(byte status)
     {
-        return await _dbSet.Where(x => x.Status == status).ToListAsync();
+        return await DbSet.Where(x => x.Status == status).ToListAsync();
     }
 
     public virtual async Task<PagedResult<T>> GetPagedAsync(
@@ -78,7 +79,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
         int pageSize, 
         Expression<Func<T, bool>>? filter = null)
     {
-        var query = _dbSet.AsQueryable();
+        var query = DbSet.AsQueryable();
         
         if (filter != null)
         {
@@ -113,7 +114,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
         // Only works for BaseLookupEntity types
         if (typeof(T).IsAssignableTo(typeof(BaseLookupEntity)))
         {
-            return await _dbSet
+            return await DbSet
                 .Cast<BaseLookupEntity>()
                 .Where(x => x.Status == 1 && 
                            (x.Code.Contains(searchTerm) || x.Name.Contains(searchTerm)))
@@ -139,7 +140,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
         // Only works if T is BaseLookupEntity
         if (typeof(T).IsAssignableTo(typeof(BaseLookupEntity)))
         {
-            return await _dbSet
+            return await DbSet
                 .Cast<BaseLookupEntity>()
                 .Where(x => x.Code == code && x.Status == 1)
                 .Cast<T>()
@@ -157,8 +158,8 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
     {
         entity.UpdateAuditFields("system"); // TODO: Get from current user context
         
-        await _dbSet.AddAsync(entity);
-        await _context.SaveChangesAsync();
+        await DbSet.AddAsync(entity);
+        await Context.SaveChangesAsync();
         
         _logger.LogInformation("Created {EntityType} with ID {Id}", typeof(T).Name, entity.Id);
         return entity;
@@ -174,8 +175,8 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
             entity.UpdateAuditFields(currentUser);
         }
 
-        await _dbSet.AddRangeAsync(entityList);
-        await _context.SaveChangesAsync();
+        await DbSet.AddRangeAsync(entityList);
+        await Context.SaveChangesAsync();
         
         _logger.LogInformation("Created {Count} {EntityType} entities", entityList.Count, typeof(T).Name);
         return entityList;
@@ -185,8 +186,8 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
     {
         entity.UpdateAuditFields("system"); // TODO: Get from current user context
         
-        _dbSet.Update(entity);
-        await _context.SaveChangesAsync();
+        DbSet.Update(entity);
+        await Context.SaveChangesAsync();
         
         _logger.LogInformation("Updated {EntityType} with ID {Id}", typeof(T).Name, entity.Id);
         return entity;
@@ -209,12 +210,12 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
                 
                 if (entity.Id == 0)
                 {
-                    await _dbSet.AddAsync(entity);
+                    await DbSet.AddAsync(entity);
                     created++;
                 }
                 else
                 {
-                    _dbSet.Update(entity);
+                    DbSet.Update(entity);
                     updated++;
                 }
             }
@@ -227,7 +228,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
 
         if (created > 0 || updated > 0)
         {
-            await _context.SaveChangesAsync();
+            await Context.SaveChangesAsync();
         }
 
         _logger.LogInformation("Bulk upsert completed: {Created} created, {Updated} updated, {Errors} errors", 
@@ -243,7 +244,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
             return false;
 
         entity.MarkDeleted(deletedBy);
-        await _context.SaveChangesAsync();
+        await Context.SaveChangesAsync();
         
         _logger.LogInformation("Soft deleted {EntityType} with ID {Id}", typeof(T).Name, id);
         return true;
@@ -251,14 +252,14 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
 
     public virtual async Task<int> BulkDeleteAsync(Expression<Func<T, bool>> predicate, string deletedBy)
     {
-        var entities = await _dbSet.Where(predicate).ToListAsync();
+        var entities = await DbSet.Where(predicate).ToListAsync();
         
         foreach (var entity in entities)
         {
             entity.MarkDeleted(deletedBy);
         }
 
-        await _context.SaveChangesAsync();
+        await Context.SaveChangesAsync();
         
         _logger.LogInformation("Bulk soft deleted {Count} {EntityType} entities", entities.Count, typeof(T).Name);
         return entities.Count;
@@ -270,7 +271,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
 
     public virtual async Task<int> CountAsync(Expression<Func<T, bool>>? filter = null)
     {
-        var query = _dbSet.AsQueryable();
+        var query = DbSet.AsQueryable();
         
         if (filter != null)
         {
@@ -282,24 +283,24 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseAdminEnt
 
     public virtual async Task<bool> ExistsAsync(long id)
     {
-        return await _dbSet.AnyAsync(x => x.Id == id);
+        return await DbSet.AnyAsync(x => x.Id == id);
     }
 
     public virtual async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
     {
-        return await _dbSet.AnyAsync(predicate);
+        return await DbSet.AnyAsync(predicate);
     }
 
     public virtual async Task<IEnumerable<TResult>> SelectAsync<TResult>(Expression<Func<T, TResult>> selector)
     {
-        return await _dbSet.Select(selector).ToListAsync();
+        return await DbSet.Select(selector).ToListAsync();
     }
 
     public virtual async Task<IEnumerable<TResult>> SelectAsync<TResult>(
         Expression<Func<T, bool>> filter, 
         Expression<Func<T, TResult>> selector)
     {
-        return await _dbSet.Where(filter).Select(selector).ToListAsync();
+        return await DbSet.Where(filter).Select(selector).ToListAsync();
     }
 
     #endregion

@@ -8,14 +8,15 @@ using System.Text.Json;
 namespace abc.bvl.AdminTool.Infrastructure.Data.Context;
 
 /// <summary>
-/// Entity Framework DbContext for AdminTool
+/// Abstract base Entity Framework DbContext for AdminTool
 /// Supports Oracle database with dual-database routing capability
+/// Derived classes specify the schema name for proper database routing
 /// </summary>
-public class AdminDbContext : DbContext, IAdminDbContext
+public abstract class AdminDbContext : DbContext, IAdminDbContext
 {
     private IDbContextTransaction? _currentTransaction;
 
-    public AdminDbContext(DbContextOptions<AdminDbContext> options) : base(options)
+    protected AdminDbContext(DbContextOptions options) : base(options)
     {
     }
 

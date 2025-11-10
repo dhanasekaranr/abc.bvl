@@ -1,7 +1,8 @@
 using abc.bvl.AdminTool.Api.Configuration;
 using abc.bvl.AdminTool.Infrastructure.Data.Context;
+using abc.bvl.AdminTool.Infrastructure.Data.Interfaces;
+using abc.bvl.AdminTool.Infrastructure.Data.Providers;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace abc.bvl.AdminTool.Api.Services;
 
@@ -9,7 +10,7 @@ public static class DatabaseConfigurationExtensions
 {
     /// <summary>
     /// Registers both Primary and Secondary DbContexts for dual-database routing
-    /// Uses keyed services (.NET 8+) to register multiple DbContext instances
+    /// Uses middleware-based context provider pattern for request-scoped routing
     /// </summary>
     public static IServiceCollection AddConfigurableDatabase(
         this IServiceCollection services, 
@@ -40,46 +41,29 @@ public static class DatabaseConfigurationExtensions
             throw new InvalidOperationException("AdminDb_Primary connection string is required");
         }
 
-        // Register PRIMARY DbContext (keyed service)
-        services.AddKeyedScoped<AdminDbContext>("Primary", (serviceProvider, key) =>
+        // Register PRIMARY DbContext - APP_USER schema
+        services.AddDbContext<AdminDbPrimaryContext>(options =>
         {
-            var optionsBuilder = new DbContextOptionsBuilder<AdminDbContext>();
-            optionsBuilder.UseOracle(primaryConnectionString);
-            optionsBuilder.EnableSensitiveDataLogging(false);
-            optionsBuilder.EnableDetailedErrors(false);
-            
-            return new AdminDbContext(optionsBuilder.Options);
-        });
+            options.UseOracle(primaryConnectionString);
+            options.EnableSensitiveDataLogging(false);
+            options.EnableDetailedErrors(false);
+        }, ServiceLifetime.Scoped);
 
-        // Register SECONDARY DbContext (keyed service) - if connection string provided
-        if (!string.IsNullOrWhiteSpace(secondaryConnectionString))
-        {
-            services.AddKeyedScoped<AdminDbContext>("Secondary", (serviceProvider, key) =>
-            {
-                var optionsBuilder = new DbContextOptionsBuilder<AdminDbContext>();
-                optionsBuilder.UseOracle(secondaryConnectionString);
-                optionsBuilder.EnableSensitiveDataLogging(false);
-                optionsBuilder.EnableDetailedErrors(false);
-                
-                return new AdminDbContext(optionsBuilder.Options);
-            });
-        }
-        else
-        {
-            // If no secondary connection, register Primary as Secondary fallback
-            services.AddKeyedScoped<AdminDbContext>("Secondary", (serviceProvider, key) =>
-            {
-                var optionsBuilder = new DbContextOptionsBuilder<AdminDbContext>();
-                optionsBuilder.UseOracle(primaryConnectionString);
-                optionsBuilder.EnableSensitiveDataLogging(false);
-                optionsBuilder.EnableDetailedErrors(false);
-                
-                return new AdminDbContext(optionsBuilder.Options);
-            });
-        }
+        // Register SECONDARY DbContext - CVLWEBTOOLS schema
+        // If no secondary connection, use primary connection with different schema
+        var effectiveSecondaryConnection = string.IsNullOrWhiteSpace(secondaryConnectionString) 
+            ? primaryConnectionString 
+            : secondaryConnectionString;
 
-        // Register DbContextResolver for routing logic
-        services.AddScoped<IDbContextResolver, DbContextResolver>();
+        services.AddDbContext<AdminDbSecondaryContext>(options =>
+        {
+            options.UseOracle(effectiveSecondaryConnection);
+            options.EnableSensitiveDataLogging(false);
+            options.EnableDetailedErrors(false);
+        }, ServiceLifetime.Scoped);
+
+        // Register the current context provider for request-scoped routing
+        services.AddScoped<ICurrentDbContextProvider, CurrentDbContextProvider>();
 
         return services;
     }

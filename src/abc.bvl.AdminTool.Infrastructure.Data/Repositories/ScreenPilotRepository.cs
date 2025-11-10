@@ -1,23 +1,25 @@
-﻿using abc.bvl.AdminTool.Application.Common.Interfaces;
+using abc.bvl.AdminTool.Application.Common.Interfaces;
 using abc.bvl.AdminTool.Application.Common.Models;
 using abc.bvl.AdminTool.Domain.Entities;
 using abc.bvl.AdminTool.Infrastructure.Data.Context;
+using abc.bvl.AdminTool.Infrastructure.Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace abc.bvl.AdminTool.Infrastructure.Data.Repositories;
 
 public class ScreenPilotRepository : IScreenPilotRepository
 {
-    private readonly AdminDbContext _context;
+    private readonly ICurrentDbContextProvider _contextProvider;
+    private AdminDbContext Context => _contextProvider.GetContext();
 
-    public ScreenPilotRepository(AdminDbContext context)
+    public ScreenPilotRepository(ICurrentDbContextProvider contextProvider)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _contextProvider = contextProvider ?? throw new ArgumentNullException(nameof(contextProvider));
     }
 
     public async Task<IEnumerable<ScreenPilotDto>> GetByUserIdAsync(long nbUserGk, CancellationToken cancellationToken = default)
     {
-        return await _context.ScreenPilots
+        return await Context.ScreenPilots
             .AsNoTracking()
             .Where(sp => sp.NbUserGk == nbUserGk && sp.StatusId == 1)
             .Select(sp => new ScreenPilotDto
@@ -37,7 +39,7 @@ public class ScreenPilotRepository : IScreenPilotRepository
 
     public async Task<ScreenPilotDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
     {
-        return await _context.ScreenPilots
+        return await Context.ScreenPilots
             .AsNoTracking()
             .Where(sp => sp.ScreenPilotGk == id)
             .Select(sp => new ScreenPilotDto
@@ -57,7 +59,7 @@ public class ScreenPilotRepository : IScreenPilotRepository
 
     public async Task<IEnumerable<ScreenPilotDto>> GetByScreenGkAsync(long screenGk, CancellationToken cancellationToken = default)
     {
-        return await _context.ScreenPilots
+        return await Context.ScreenPilots
             .AsNoTracking()
             .Where(sp => sp.ScreenGk == screenGk)
             .Select(sp => new ScreenPilotDto
@@ -77,7 +79,7 @@ public class ScreenPilotRepository : IScreenPilotRepository
 
     public async Task<IEnumerable<ScreenPilotDto>> GetAllAsync(int? statusId = null, CancellationToken cancellationToken = default)
     {
-        var query = _context.ScreenPilots.AsNoTracking();
+        var query = Context.ScreenPilots.AsNoTracking();
         if (statusId.HasValue)
             query = query.Where(sp => sp.StatusId == statusId.Value);
         return await query.Select(sp => new ScreenPilotDto
@@ -96,7 +98,7 @@ public class ScreenPilotRepository : IScreenPilotRepository
 
     public IQueryable<ScreenPilotDto> GetAllQueryable(int? statusId = null)
     {
-        var query = _context.ScreenPilots.AsNoTracking();
+        var query = Context.ScreenPilots.AsNoTracking();
         if (statusId.HasValue)
             query = query.Where(sp => sp.StatusId == statusId.Value);
         return query.Select(sp => new ScreenPilotDto
@@ -115,18 +117,18 @@ public class ScreenPilotRepository : IScreenPilotRepository
 
     public async Task<ScreenPilot?> GetEntityByIdAsync(long id, CancellationToken cancellationToken = default)
     {
-        return await _context.ScreenPilots.FindAsync(new object[] { id }, cancellationToken);
+        return await Context.ScreenPilots.FindAsync(new object[] { id }, cancellationToken);
     }
 
     public async Task<ScreenPilot> CreateAsync(ScreenPilot entity, CancellationToken cancellationToken = default)
     {
-        _context.ScreenPilots.Add(entity);
+        Context.ScreenPilots.Add(entity);
         return entity;
     }
 
     public async Task<ScreenPilot> UpdateAsync(ScreenPilot entity, CancellationToken cancellationToken = default)
     {
-        _context.ScreenPilots.Update(entity);
+        Context.ScreenPilots.Update(entity);
         await Task.CompletedTask;
         return entity;
     }
@@ -135,6 +137,6 @@ public class ScreenPilotRepository : IScreenPilotRepository
     {
         var entity = await GetEntityByIdAsync(id, cancellationToken);
         if (entity != null)
-            _context.ScreenPilots.Remove(entity);
+            Context.ScreenPilots.Remove(entity);
     }
 }

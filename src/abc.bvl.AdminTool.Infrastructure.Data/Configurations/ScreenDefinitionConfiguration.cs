@@ -9,7 +9,7 @@ public class ScreenDefinitionConfiguration : IEntityTypeConfiguration<ScreenDefi
 {
     public void Configure(EntityTypeBuilder<ScreenDefinition> builder)
     {
-        builder.ToTable("ADMIN_SCREENDEFN", "APP_USER");
+        builder.ToTable("ADMIN_SCREENDEFN");
         builder.HasKey(x => x.ScreenGk);
         builder.Property(x => x.ScreenGk).HasColumnName("SCREEN_GK").ValueGeneratedNever();
         builder.Property(x => x.ScreenName).HasColumnName("SCREENNAME").HasMaxLength(50).IsRequired();

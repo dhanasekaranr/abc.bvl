@@ -3,22 +3,24 @@ using abc.bvl.AdminTool.Application.Common.Models;
 using abc.bvl.AdminTool.Contracts.Common;
 using abc.bvl.AdminTool.Domain.Entities;
 using abc.bvl.AdminTool.Infrastructure.Data.Context;
+using abc.bvl.AdminTool.Infrastructure.Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace abc.bvl.AdminTool.Infrastructure.Data.Repositories;
 
 public class ScreenDefinitionRepository : IScreenDefinitionRepository
 {
-    private readonly AdminDbContext _context;
+    private readonly ICurrentDbContextProvider _contextProvider;
+    private AdminDbContext Context => _contextProvider.GetContext();
 
-    public ScreenDefinitionRepository(AdminDbContext context)
+    public ScreenDefinitionRepository(ICurrentDbContextProvider contextProvider)
     {
-        _context = context;
+        _contextProvider = contextProvider;
     }
 
     public async Task<IEnumerable<ScreenDefnDto>> GetAllAsync(byte? status = null, CancellationToken cancellationToken = default)
     {
-        var query = _context.ScreenDefinitions.AsNoTracking();
+        var query = Context.ScreenDefinitions.AsNoTracking();
 
         if (status.HasValue)
         {
@@ -43,7 +45,7 @@ public class ScreenDefinitionRepository : IScreenDefinitionRepository
 
     public async Task<ScreenDefnDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
     {
-        var result = await _context.ScreenDefinitions
+        var result = await Context.ScreenDefinitions
             .AsNoTracking()
             .Where(s => s.ScreenGk == id)
             .Select(s => new ScreenDefnDto
@@ -63,31 +65,31 @@ public class ScreenDefinitionRepository : IScreenDefinitionRepository
 
     public async Task<ScreenDefinition?> GetEntityByIdAsync(long id, CancellationToken cancellationToken = default)
     {
-        return await _context.ScreenDefinitions
+        return await Context.ScreenDefinitions
             .FirstOrDefaultAsync(s => s.ScreenGk == id, cancellationToken);
     }
 
     public async Task<ScreenDefinition> CreateAsync(ScreenDefinition screenDefinition, CancellationToken cancellationToken = default)
     {
-        _context.ScreenDefinitions.Add(screenDefinition);
-        await _context.SaveChangesAsync(cancellationToken);
+        Context.ScreenDefinitions.Add(screenDefinition);
+        await Context.SaveChangesAsync(cancellationToken);
         return screenDefinition;
     }
 
     public async Task<ScreenDefinition> UpdateAsync(ScreenDefinition screenDefinition, CancellationToken cancellationToken = default)
     {
-        _context.ScreenDefinitions.Update(screenDefinition);
-        await _context.SaveChangesAsync(cancellationToken);
+        Context.ScreenDefinitions.Update(screenDefinition);
+        await Context.SaveChangesAsync(cancellationToken);
         return screenDefinition;
     }
 
     public async Task DeleteAsync(long id, CancellationToken cancellationToken = default)
     {
-        var entity = await _context.ScreenDefinitions.FindAsync(id, cancellationToken);
+        var entity = await Context.ScreenDefinitions.FindAsync(id, cancellationToken);
         if (entity != null)
         {
-            _context.ScreenDefinitions.Remove(entity);
-            await _context.SaveChangesAsync(cancellationToken);
+            Context.ScreenDefinitions.Remove(entity);
+            await Context.SaveChangesAsync(cancellationToken);
         }
     }
 
@@ -97,7 +99,7 @@ public class ScreenDefinitionRepository : IScreenDefinitionRepository
         PaginationRequest pagination, 
         CancellationToken cancellationToken = default)
     {
-        var query = _context.ScreenDefinitions.AsNoTracking();
+        var query = Context.ScreenDefinitions.AsNoTracking();
 
         // Apply status filter
         if (status.HasValue)
@@ -137,7 +139,7 @@ public class ScreenDefinitionRepository : IScreenDefinitionRepository
         string? searchTerm, 
         CancellationToken cancellationToken = default)
     {
-        var query = _context.ScreenDefinitions.AsNoTracking();
+        var query = Context.ScreenDefinitions.AsNoTracking();
 
         // Apply status filter
         if (status.HasValue)

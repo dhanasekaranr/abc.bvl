@@ -9,7 +9,7 @@ public class ScreenPilotConfiguration : IEntityTypeConfiguration<ScreenPilot>
 {
     public void Configure(EntityTypeBuilder<ScreenPilot> builder)
     {
-        builder.ToTable("ADMIN_SCREENPILOT", "APP_USER");
+        builder.ToTable("ADMIN_SCREENPILOT");
         builder.HasKey(x => x.ScreenPilotGk);
         builder.Property(x => x.ScreenPilotGk).HasColumnName("SCREENPILOT_GK").ValueGeneratedNever();
         builder.Property(x => x.NbUserGk).HasColumnName("NBUSER_GK").HasColumnType("NUMBER(9)").IsRequired();
