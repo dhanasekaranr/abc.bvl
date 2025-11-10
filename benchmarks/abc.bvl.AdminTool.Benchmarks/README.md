@@ -8,8 +8,20 @@ This benchmark suite includes:
 
 1. **Pagination Benchmarks**: Compare three pagination strategies (Traditional, Optimized, Hybrid)
 2. **Repository Benchmarks**: Measure repository method performance across different data volumes
-3. **In-Memory Testing**: Fast, repeatable tests using SQLite in-memory database
-4. **Oracle Testing**: Real-world performance with actual Oracle database
+3. **In-Memory Testing**: Fast, repeatable tests using SQLite in-memory database (creates/deletes data)
+4. **Oracle Testing**: Real-world performance with actual Oracle database (uses existing data, no modifications)
+
+### ⚠️ Important: Benchmark Behavior
+
+- **In-Memory Benchmarks**: Create temporary database, seed test data, run benchmarks, then delete everything
+  - Safe to run anytime - no permanent changes
+  - Fast execution with controlled data distribution
+  
+- **Oracle Benchmarks**: Use EXISTING data in your Oracle database
+  - ✅ **No data is created or deleted**
+  - Provides realistic performance metrics on actual production-like data
+  - Requires existing data in `APP_USER.ADMIN_SCREENPILOT` and `APP_USER.ADMIN_SCREENDEFN` tables
+  - Set `BENCHMARK_ORACLE_CONNECTION` environment variable before running
 
 ## 🎯 Benchmark Results Summary
 

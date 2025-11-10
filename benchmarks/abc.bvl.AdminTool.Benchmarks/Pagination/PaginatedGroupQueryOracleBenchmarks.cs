@@ -16,8 +16,12 @@ namespace abc.bvl.AdminTool.Benchmarks.Pagination;
 /// SETUP REQUIRED:
 /// 1. Set environment variable: BENCHMARK_ORACLE_CONNECTION
 ///    Example: "Data Source=localhost:1521/XE;User Id=ADMINTOOL;Password=your_password;"
-/// 2. Ensure database is accessible and user has CREATE TABLE permissions
+/// 2. Ensure database is accessible and contains existing data in APP_USER schema
 /// 3. Run: dotnet run -c Release --filter *OracleBenchmarks*
+/// 
+/// NOTE: This benchmark uses EXISTING data in your Oracle database.
+/// It does NOT create or delete any records.
+/// Ensure you have data in APP_USER.ADMIN_SCREENPILOT and APP_USER.ADMIN_SCREENDEFN tables.
 /// </summary>
 [SimpleJob(warmupCount: 1, iterationCount: 3)]
 public class PaginatedGroupQueryOracleBenchmarks : BaseOracleBenchmark
@@ -25,63 +29,26 @@ public class PaginatedGroupQueryOracleBenchmarks : BaseOracleBenchmark
     private ScreenPilotRepository? _pilotRepository;
     private ScreenDefinitionRepository? _screenRepository;
 
-    [Params(10000)]
-    public int RecordCount { get; set; }
-
     [Params(10)]
     public int PageSize { get; set; }
 
     [Params(1)]
     public int PageNumber { get; set; }
 
-    protected override int RecordCountToSeed => RecordCount;
+    protected override int RecordCountToSeed => 0; // Not used for Oracle benchmarks
 
     protected override async Task SeedDataAsync(AdminDbContext context)
     {
-        // Use raw SQL to avoid EF Core INSERT complexity with Oracle
-        var now = DateTime.UtcNow.AddDays(-30);
+        // ⚠️ Oracle benchmarks use EXISTING data - no seeding required
+        // Just initialize repositories
+        _pilotRepository = new ScreenPilotRepository(context);
+        _screenRepository = new ScreenDefinitionRepository(context);
         
-        // Use high ID numbers and unique codes to avoid conflicts
-        var startId = 1000000;
-        var uniqueSuffix = Guid.NewGuid().ToString("N").Substring(0, 8);  // Use first 8 chars of GUID
+        // Verify we have data to work with
+        var pilotCount = await context.ScreenPilots.CountAsync();
+        Console.WriteLine($"📊 Oracle benchmark will use {pilotCount} existing pilot records");
         
-        // Insert 100 screen definitions using raw SQL
-        for (int i = 1; i <= 100; i++)
-        {
-            await context.Database.ExecuteSqlRawAsync(
-                @"INSERT INTO APP_USER.ADMIN_SCREENDEFN 
-                  (SCREENDEFNID, SCREENCODE, SCREENNAME, STATUS, DISPLAYORDER,
-                   CREATEDAT, CREATEDBY, UPDATEDAT, UPDATEDBY, ROWVERSION) 
-                  VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9})",
-                startId + i, $"BM{uniqueSuffix}{i:D3}", $"Screen_{uniqueSuffix}_{i:D3}", 1, i,
-                now, "benchmark-setup", now, "benchmark-setup", $"v{uniqueSuffix}_{i}");
-        }
-
-        // Insert RecordCount screen pilots using raw SQL (batch inserts)
-        var userCount = RecordCount / 10;
-        var pilotNow = DateTime.UtcNow.AddDays(-10);
-        var pilotStartId = 2000000;
-        
-        Console.WriteLine($"🔄 Seeding {RecordCount} pilot assignments...");
-        for (int i = 0; i < RecordCount; i++)
-        {
-            await context.Database.ExecuteSqlRawAsync(
-                @"INSERT INTO APP_USER.ADMIN_SCREENPILOT 
-                  (SCREENPILOTID, SCREENDEFNID, USERID, STATUS,
-                   CREATEDAT, CREATEDBY, UPDATEDAT, UPDATEDBY, ROWVERSION) 
-                  VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})",
-                pilotStartId + i + 1, startId + ((i % 100) + 1), $"user_{(i % userCount):D5}", 1,
-                pilotNow, "benchmark-setup", pilotNow, "benchmark-setup", $"v{uniqueSuffix}_{i}");
-            
-            if ((i + 1) % 1000 == 0)
-                Console.WriteLine($"   Progress: {i + 1}/{RecordCount} records inserted");
-        }
-
-        // Initialize repositories after seeding
-        _pilotRepository = new ScreenPilotRepository(Context);
-        _screenRepository = new ScreenDefinitionRepository(Context);
-
-        Console.WriteLine($"✅ Seeded 100 screens and {RecordCount} pilot assignments for {userCount} users");
+        await Task.CompletedTask;
     }
 
     [Benchmark(Baseline = true, Description = "Traditional: Load all → Group → Paginate")]

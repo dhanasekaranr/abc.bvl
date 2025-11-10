@@ -55,16 +55,24 @@ public abstract class BaseOracleBenchmark
             await Context.Database.CanConnectAsync();
             Console.WriteLine($"✅ Connected to Oracle database");
             
-            // Clean up any existing benchmark data (using high ID ranges >= 1000000)
-            await Context.Database.ExecuteSqlRawAsync("DELETE FROM APP_USER.ADMIN_SCREENPILOT WHERE SCREENPILOTID >= 2000000");
-            await Context.Database.ExecuteSqlRawAsync("DELETE FROM APP_USER.ADMIN_SCREENDEFN WHERE SCREENDEFNID >= 1000000");
-            Console.WriteLine($"✅ Cleaned up old benchmark data");
+            // ⚠️ NOTE: Oracle benchmarks use EXISTING data - no cleanup/seeding
+            // The benchmark runs on real production-like data already in the database
+            // This provides realistic performance metrics with actual data distribution
             
-            // Seed test data
-            await SeedDataAsync(Context);
-            await Context.SaveChangesAsync();
+            // Verify data exists
+            var screenCount = await Context.ScreenDefinitions.CountAsync();
+            var pilotCount = await Context.ScreenPilots.CountAsync();
             
-            Console.WriteLine($"✅ Oracle benchmark setup complete: {RecordCountToSeed} records seeded");
+            Console.WriteLine($"📊 Using existing data: {screenCount} screens, {pilotCount} pilot assignments");
+            
+            if (pilotCount == 0)
+            {
+                Console.WriteLine($"⚠️ WARNING: No pilot data found in database!");
+                Console.WriteLine($"   Benchmarks will run but may not be representative.");
+                Console.WriteLine($"   Consider seeding data or running in-memory benchmarks instead.");
+            }
+            
+            Console.WriteLine($"✅ Oracle benchmark setup complete - using {pilotCount} existing records");
         }
         catch (Exception ex)
         {
@@ -81,10 +89,11 @@ public abstract class BaseOracleBenchmark
         {
             try
             {
-                // Clean up test data (high ID ranges)
-                await Context.Database.ExecuteSqlRawAsync("DELETE FROM APP_USER.ADMIN_SCREENPILOT WHERE SCREENPILOTID >= 2000000");
-                await Context.Database.ExecuteSqlRawAsync("DELETE FROM APP_USER.ADMIN_SCREENDEFN WHERE SCREENDEFNID >= 1000000");
-                Console.WriteLine($"✅ Oracle benchmark cleanup complete");
+                // ⚠️ NOTE: Oracle benchmarks do NOT clean up data
+                // Data remains in database for subsequent benchmark runs
+                // This allows benchmarks to run on consistent, realistic datasets
+                
+                Console.WriteLine($"✅ Oracle benchmark cleanup complete (no data deleted)");
             }
             catch (Exception ex)
             {
