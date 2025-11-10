@@ -72,60 +72,59 @@ public class EntityReplicator : IEntityReplicator
                 // Check if entity already exists (idempotency)
                 var existing = await _context.ScreenDefinitions
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(e => e.Id == entity.Id, cancellationToken);
+                    .FirstOrDefaultAsync(e => e.ScreenGk == entity.ScreenGk, cancellationToken);
 
                 if (existing == null)
                 {
                     _context.ScreenDefinitions.Add(entity);
-                    _logger.LogDebug("INSERT ScreenDefinition {Id}", entity.Id);
+                    _logger.LogDebug("INSERT ScreenDefinition {ScreenGk}", entity.ScreenGk);
                 }
                 else
                 {
-                    _logger.LogDebug("ScreenDefinition {Id} already exists, skipping INSERT", entity.Id);
+                    _logger.LogDebug("ScreenDefinition {ScreenGk} already exists, skipping INSERT", entity.ScreenGk);
                 }
                 break;
 
             case "UPDATE":
                 var existingEntity = await _context.ScreenDefinitions
-                    .FirstOrDefaultAsync(e => e.Id == entity.Id, cancellationToken);
+                    .FirstOrDefaultAsync(e => e.ScreenGk == entity.ScreenGk, cancellationToken);
 
                 if (existingEntity != null)
                 {
                     // Update properties
                     existingEntity.ScreenName = entity.ScreenName;
-                    existingEntity.Description = entity.Description;
-                    existingEntity.Status = entity.Status;
-                    existingEntity.UpdatedAt = entity.UpdatedAt;
+                    existingEntity.StatusId = entity.StatusId;
+                    existingEntity.UpdatedDt = entity.UpdatedDt;
                     existingEntity.UpdatedBy = entity.UpdatedBy;
 
                     _context.ScreenDefinitions.Update(existingEntity);
-                    _logger.LogDebug("UPDATE ScreenDefinition {Id}", entity.Id);
+                    _logger.LogDebug("UPDATE ScreenDefinition {ScreenGk}", entity.ScreenGk);
                 }
                 else
                 {
                     // If entity doesn't exist, insert it (recovery scenario)
                     _context.ScreenDefinitions.Add(entity);
-                    _logger.LogWarning("ScreenDefinition {Id} not found for UPDATE, inserting instead", entity.Id);
+                    _logger.LogWarning("ScreenDefinition {ScreenGk} not found for UPDATE, inserting instead", entity.ScreenGk);
                 }
                 break;
 
             case "DELETE":
                 var entityToDelete = await _context.ScreenDefinitions
-                    .FirstOrDefaultAsync(e => e.Id == entity.Id, cancellationToken);
+                    .FirstOrDefaultAsync(e => e.ScreenGk == entity.ScreenGk, cancellationToken);
 
                 if (entityToDelete != null)
                 {
                     // Soft delete by setting status to 0
-                    entityToDelete.Status = 0;
-                    entityToDelete.UpdatedAt = entity.UpdatedAt;
+                    entityToDelete.StatusId = 0;
+                    entityToDelete.UpdatedDt = entity.UpdatedDt;
                     entityToDelete.UpdatedBy = entity.UpdatedBy;
 
                     _context.ScreenDefinitions.Update(entityToDelete);
-                    _logger.LogDebug("DELETE (soft) ScreenDefinition {Id}", entity.Id);
+                    _logger.LogDebug("DELETE (soft) ScreenDefinition {ScreenGk}", entity.ScreenGk);
                 }
                 else
                 {
-                    _logger.LogDebug("ScreenDefinition {Id} not found for DELETE, skipping", entity.Id);
+                    _logger.LogDebug("ScreenDefinition {ScreenGk} not found for DELETE, skipping", entity.ScreenGk);
                 }
                 break;
 
@@ -147,57 +146,58 @@ public class EntityReplicator : IEntityReplicator
             case "INSERT":
                 var existing = await _context.ScreenPilots
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(e => e.Id == entity.Id, cancellationToken);
+                    .FirstOrDefaultAsync(e => e.ScreenPilotGk == entity.ScreenPilotGk, cancellationToken);
 
                 if (existing == null)
                 {
                     _context.ScreenPilots.Add(entity);
-                    _logger.LogDebug("INSERT ScreenPilot {Id}", entity.Id);
+                    _logger.LogDebug("INSERT ScreenPilot {ScreenPilotGk}", entity.ScreenPilotGk);
                 }
                 else
                 {
-                    _logger.LogDebug("ScreenPilot {Id} already exists, skipping INSERT", entity.Id);
+                    _logger.LogDebug("ScreenPilot {ScreenPilotGk} already exists, skipping INSERT", entity.ScreenPilotGk);
                 }
                 break;
 
             case "UPDATE":
                 var existingEntity = await _context.ScreenPilots
-                    .FirstOrDefaultAsync(e => e.Id == entity.Id, cancellationToken);
+                    .FirstOrDefaultAsync(e => e.ScreenPilotGk == entity.ScreenPilotGk, cancellationToken);
 
                 if (existingEntity != null)
                 {
-                    existingEntity.UserId = entity.UserId;
-                    existingEntity.ScreenDefnId = entity.ScreenDefnId;
-                    existingEntity.Status = entity.Status;
-                    existingEntity.UpdatedAt = entity.UpdatedAt;
+                    existingEntity.NbUserGk = entity.NbUserGk;
+                    existingEntity.ScreenGk = entity.ScreenGk;
+                    existingEntity.StatusId = entity.StatusId;
+                    existingEntity.DualMode = entity.DualMode;
+                    existingEntity.UpdatedDt = entity.UpdatedDt;
                     existingEntity.UpdatedBy = entity.UpdatedBy;
 
                     _context.ScreenPilots.Update(existingEntity);
-                    _logger.LogDebug("UPDATE ScreenPilot {Id}", entity.Id);
+                    _logger.LogDebug("UPDATE ScreenPilot {ScreenPilotGk}", entity.ScreenPilotGk);
                 }
                 else
                 {
                     _context.ScreenPilots.Add(entity);
-                    _logger.LogWarning("ScreenPilot {Id} not found for UPDATE, inserting instead", entity.Id);
+                    _logger.LogWarning("ScreenPilot {ScreenPilotGk} not found for UPDATE, inserting instead", entity.ScreenPilotGk);
                 }
                 break;
 
             case "DELETE":
                 var entityToDelete = await _context.ScreenPilots
-                    .FirstOrDefaultAsync(e => e.Id == entity.Id, cancellationToken);
+                    .FirstOrDefaultAsync(e => e.ScreenPilotGk == entity.ScreenPilotGk, cancellationToken);
 
                 if (entityToDelete != null)
                 {
-                    entityToDelete.Status = 0;
-                    entityToDelete.UpdatedAt = entity.UpdatedAt;
+                    entityToDelete.StatusId = 0;
+                    entityToDelete.UpdatedDt = entity.UpdatedDt;
                     entityToDelete.UpdatedBy = entity.UpdatedBy;
 
                     _context.ScreenPilots.Update(entityToDelete);
-                    _logger.LogDebug("DELETE (soft) ScreenPilot {Id}", entity.Id);
+                    _logger.LogDebug("DELETE (soft) ScreenPilot {ScreenPilotGk}", entity.ScreenPilotGk);
                 }
                 else
                 {
-                    _logger.LogDebug("ScreenPilot {Id} not found for DELETE, skipping", entity.Id);
+                    _logger.LogDebug("ScreenPilot {ScreenPilotGk} not found for DELETE, skipping", entity.ScreenPilotGk);
                 }
                 break;
 

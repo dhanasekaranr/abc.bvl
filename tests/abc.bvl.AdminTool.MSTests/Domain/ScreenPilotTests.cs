@@ -1,4 +1,4 @@
-using abc.bvl.AdminTool.Domain.Entities;
+﻿using abc.bvl.AdminTool.Domain.Entities;
 using FluentAssertions;
 
 namespace abc.bvl.AdminTool.MSTests.Domain;
@@ -7,170 +7,61 @@ namespace abc.bvl.AdminTool.MSTests.Domain;
 public class ScreenPilotTests
 {
     [TestMethod]
-    public void Constructor_ShouldCreateScreenPilotWithDefaultValues()
+    public void Constructor_ShouldInitializeProperties()
     {
         // Arrange & Act
         var pilot = new ScreenPilot
         {
-            ScreenDefnId = 1,
-            UserId = "john.doe",
-            CreatedBy = "admin"
+            ScreenPilotGk = 100,
+            NbUserGk = 5001,
+            ScreenGk = 2000,
+            StatusId = 1,
+            DualMode = 0,
+            CreatedDt = DateTime.UtcNow,
+            CreatedBy = 1001,
+            UpdatedDt = DateTime.UtcNow,
+            UpdatedBy = 1002
         };
 
         // Assert
-        pilot.ScreenDefnId.Should().Be(1);
-        pilot.UserId.Should().Be("john.doe");
-        pilot.AccessLevel.Should().BeNull();
-        pilot.Status.Should().Be(1);
+        pilot.ScreenPilotGk.Should().Be(100);
+        pilot.NbUserGk.Should().Be(5001);
+        pilot.ScreenGk.Should().Be(2000);
+        pilot.StatusId.Should().Be(1);
+        pilot.DualMode.Should().Be(0);
+        pilot.CreatedBy.Should().Be(1001);
+        pilot.UpdatedBy.Should().Be(1002);
     }
 
     [TestMethod]
-    public void ScreenPilot_WithAllProperties_ShouldStoreCorrectly()
+    public void ScreenPilot_ShouldLinkUserAndScreen()
     {
         // Arrange & Act
         var pilot = new ScreenPilot
         {
-            Id = 10,
-            ScreenDefnId = 5,
-            UserId = "jane.smith",
-            AccessLevel = "ReadWrite",
-            Status = 1,
-            CreatedBy = "admin",
-            CreatedAt = DateTime.UtcNow,
-            UpdatedBy = "admin",
-            UpdatedAt = DateTime.UtcNow
+            NbUserGk = 9999,
+            ScreenGk = 1111
         };
 
         // Assert
-        pilot.Id.Should().Be(10);
-        pilot.ScreenDefnId.Should().Be(5);
-        pilot.UserId.Should().Be("jane.smith");
-        pilot.AccessLevel.Should().Be("ReadWrite");
-        pilot.IsActive.Should().BeTrue();
+        pilot.NbUserGk.Should().Be(9999);
+        pilot.ScreenGk.Should().Be(1111);
     }
 
     [TestMethod]
-    public void ScreenPilot_WithScreenDefinitionRelation_ShouldStoreReference()
-    {
-        // Arrange
-        var screenDef = new ScreenDefinition
-        {
-            Id = 1,
-            Name = "Dashboard",
-            CreatedBy = "admin"
-        };
-
-        var pilot = new ScreenPilot
-        {
-            ScreenDefnId = screenDef.Id,
-            ScreenDefinition = screenDef,
-            UserId = "test.user",
-            CreatedBy = "admin"
-        };
-
-        // Act & Assert
-        pilot.ScreenDefnId.Should().Be(1);
-        pilot.ScreenDefinition.Should().NotBeNull();
-        pilot.ScreenDefinition.Name.Should().Be("Dashboard");
-    }
-
-    [TestMethod]
-    public void ScreenPilot_AccessLevel_ShouldBeOptional()
+    public void ScreenPilot_StatusAndDualMode_ShouldSupportValidValues()
     {
         // Arrange & Act
-        var pilotWithoutAccessLevel = new ScreenPilot
-        {
-            ScreenDefnId = 1,
-            UserId = "user1",
-            AccessLevel = null,
-            CreatedBy = "admin"
-        };
-
-        var pilotWithAccessLevel = new ScreenPilot
-        {
-            ScreenDefnId = 2,
-            UserId = "user2",
-            AccessLevel = "Admin",
-            CreatedBy = "admin"
-        };
+        var pilot1 = new ScreenPilot { StatusId = 0, DualMode = 0 };
+        var pilot2 = new ScreenPilot { StatusId = 1, DualMode = 0 };
+        var pilot3 = new ScreenPilot { StatusId = 1, DualMode = 1 };
 
         // Assert
-        pilotWithoutAccessLevel.AccessLevel.Should().BeNull();
-        pilotWithAccessLevel.AccessLevel.Should().Be("Admin");
-    }
-
-    [TestMethod]
-    public void ScreenPilot_MarkDeleted_ShouldRevokeAccess()
-    {
-        // Arrange
-        var pilot = new ScreenPilot
-        {
-            ScreenDefnId = 1,
-            UserId = "john.doe",
-            Status = 1,
-            CreatedBy = "admin"
-        };
-
-        // Act
-        pilot.MarkDeleted("revoker");
-
-        // Assert
-        pilot.Status.Should().Be(0);
-        pilot.UpdatedBy.Should().Be("revoker");
-        pilot.IsActive.Should().BeFalse();
-    }
-
-    [TestMethod]
-    public void ScreenPilot_UpdateAuditFields_ShouldTrackChanges()
-    {
-        // Arrange
-        var pilot = new ScreenPilot
-        {
-            Id = 1,
-            ScreenDefnId = 1,
-            UserId = "john.doe",
-            CreatedBy = "creator",
-            CreatedAt = DateTime.UtcNow.AddDays(-5)
-        };
-        var beforeUpdate = DateTime.UtcNow;
-
-        // Act
-        pilot.UpdateAuditFields("updater");
-
-        // Assert
-        pilot.UpdatedBy.Should().Be("updater");
-        pilot.UpdatedAt.Should().BeOnOrAfter(beforeUpdate);
-        pilot.CreatedBy.Should().Be("creator"); // Should not change
-    }
-
-    [TestMethod]
-    public void ScreenPilot_UserId_ShouldNotBeEmpty()
-    {
-        // Arrange & Act
-        var pilot = new ScreenPilot
-        {
-            ScreenDefnId = 1,
-            UserId = "test.user",
-            CreatedBy = "admin"
-        };
-
-        // Assert
-        pilot.UserId.Should().NotBeNullOrEmpty();
-    }
-
-    [TestMethod]
-    public void ScreenPilot_ScreenDefnId_ShouldReferenceValidScreen()
-    {
-        // Arrange & Act
-        var pilot = new ScreenPilot
-        {
-            ScreenDefnId = 99,
-            UserId = "test.user",
-            CreatedBy = "admin"
-        };
-
-        // Assert
-        pilot.ScreenDefnId.Should().Be(99);
-        pilot.ScreenDefnId.Should().BeGreaterThan(0);
+        pilot1.StatusId.Should().Be(0);
+        pilot1.DualMode.Should().Be(0);
+        pilot2.StatusId.Should().Be(1);
+        pilot2.DualMode.Should().Be(0);
+        pilot3.StatusId.Should().Be(1);
+        pilot3.DualMode.Should().Be(1);
     }
 }

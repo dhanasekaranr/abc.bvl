@@ -1,14 +1,11 @@
-using abc.bvl.AdminTool.Application.Common.Interfaces;
-using abc.bvl.AdminTool.Contracts.ScreenPilot;
+﻿using abc.bvl.AdminTool.Application.Common.Interfaces;
+using abc.bvl.AdminTool.Application.Common.Models;
 using abc.bvl.AdminTool.Domain.Entities;
 using abc.bvl.AdminTool.Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace abc.bvl.AdminTool.Infrastructure.Data.Repositories;
 
-/// <summary>
-/// Repository for ScreenPilot entity operations
-/// </summary>
 public class ScreenPilotRepository : IScreenPilotRepository
 {
     private readonly AdminDbContext _context;
@@ -18,75 +15,126 @@ public class ScreenPilotRepository : IScreenPilotRepository
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
-    public async Task<IEnumerable<ScreenPilotDto>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ScreenPilotDto>> GetByUserIdAsync(long nbUserGk, CancellationToken cancellationToken = default)
     {
-        var results = await _context.ScreenPilots
+        return await _context.ScreenPilots
             .AsNoTracking()
-            .Include(sp => sp.ScreenDefinition)
-            .Where(sp => sp.UserId == userId && sp.Status == 1)
-            .Select(sp => new ScreenPilotDto(
-                sp.Id,
-                sp.ScreenDefnId,
-                sp.UserId,
-                sp.Status,
-                new DateTimeOffset(sp.UpdatedAt, TimeSpan.Zero),
-                sp.UpdatedBy,
-                null, // RowVersion - not used in EF Core yet
-                sp.ScreenDefinition != null ? sp.ScreenDefinition.Name : string.Empty
-            ))
+            .Where(sp => sp.NbUserGk == nbUserGk && sp.StatusId == 1)
+            .Select(sp => new ScreenPilotDto
+            {
+                ScreenPilotGk = sp.ScreenPilotGk,
+                NbUserGk = sp.NbUserGk,
+                ScreenGk = sp.ScreenGk,
+                StatusId = sp.StatusId,
+                DualMode = sp.DualMode,
+                CreatedDt = sp.CreatedDt,
+                CreatedBy = sp.CreatedBy,
+                UpdatedDt = sp.UpdatedDt,
+                UpdatedBy = sp.UpdatedBy
+            })
             .ToListAsync(cancellationToken);
-
-        return results;
     }
 
     public async Task<ScreenPilotDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
     {
-        var result = await _context.ScreenPilots
+        return await _context.ScreenPilots
             .AsNoTracking()
-            .Include(sp => sp.ScreenDefinition)
-            .Where(sp => sp.Id == id)
-            .Select(sp => new ScreenPilotDto(
-                sp.Id,
-                sp.ScreenDefnId,
-                sp.UserId,
-                sp.Status,
-                new DateTimeOffset(sp.UpdatedAt, TimeSpan.Zero),
-                sp.UpdatedBy,
-                null, // RowVersion - not used in EF Core yet
-                sp.ScreenDefinition != null ? sp.ScreenDefinition.Name : string.Empty
-            ))
+            .Where(sp => sp.ScreenPilotGk == id)
+            .Select(sp => new ScreenPilotDto
+            {
+                ScreenPilotGk = sp.ScreenPilotGk,
+                NbUserGk = sp.NbUserGk,
+                ScreenGk = sp.ScreenGk,
+                StatusId = sp.StatusId,
+                DualMode = sp.DualMode,
+                CreatedDt = sp.CreatedDt,
+                CreatedBy = sp.CreatedBy,
+                UpdatedDt = sp.UpdatedDt,
+                UpdatedBy = sp.UpdatedBy
+            })
             .FirstOrDefaultAsync(cancellationToken);
+    }
 
-        return result;
+    public async Task<IEnumerable<ScreenPilotDto>> GetByScreenGkAsync(long screenGk, CancellationToken cancellationToken = default)
+    {
+        return await _context.ScreenPilots
+            .AsNoTracking()
+            .Where(sp => sp.ScreenGk == screenGk)
+            .Select(sp => new ScreenPilotDto
+            {
+                ScreenPilotGk = sp.ScreenPilotGk,
+                NbUserGk = sp.NbUserGk,
+                ScreenGk = sp.ScreenGk,
+                StatusId = sp.StatusId,
+                DualMode = sp.DualMode,
+                CreatedDt = sp.CreatedDt,
+                CreatedBy = sp.CreatedBy,
+                UpdatedDt = sp.UpdatedDt,
+                UpdatedBy = sp.UpdatedBy
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<ScreenPilotDto>> GetAllAsync(int? statusId = null, CancellationToken cancellationToken = default)
+    {
+        var query = _context.ScreenPilots.AsNoTracking();
+        if (statusId.HasValue)
+            query = query.Where(sp => sp.StatusId == statusId.Value);
+        return await query.Select(sp => new ScreenPilotDto
+        {
+            ScreenPilotGk = sp.ScreenPilotGk,
+            NbUserGk = sp.NbUserGk,
+            ScreenGk = sp.ScreenGk,
+            StatusId = sp.StatusId,
+            DualMode = sp.DualMode,
+            CreatedDt = sp.CreatedDt,
+            CreatedBy = sp.CreatedBy,
+            UpdatedDt = sp.UpdatedDt,
+            UpdatedBy = sp.UpdatedBy
+        }).ToListAsync(cancellationToken);
+    }
+
+    public IQueryable<ScreenPilotDto> GetAllQueryable(int? statusId = null)
+    {
+        var query = _context.ScreenPilots.AsNoTracking();
+        if (statusId.HasValue)
+            query = query.Where(sp => sp.StatusId == statusId.Value);
+        return query.Select(sp => new ScreenPilotDto
+        {
+            ScreenPilotGk = sp.ScreenPilotGk,
+            NbUserGk = sp.NbUserGk,
+            ScreenGk = sp.ScreenGk,
+            StatusId = sp.StatusId,
+            DualMode = sp.DualMode,
+            CreatedDt = sp.CreatedDt,
+            CreatedBy = sp.CreatedBy,
+            UpdatedDt = sp.UpdatedDt,
+            UpdatedBy = sp.UpdatedBy
+        });
     }
 
     public async Task<ScreenPilot?> GetEntityByIdAsync(long id, CancellationToken cancellationToken = default)
     {
-        return await _context.ScreenPilots
-            .FirstOrDefaultAsync(sp => sp.Id == id, cancellationToken);
+        return await _context.ScreenPilots.FindAsync(new object[] { id }, cancellationToken);
     }
 
-    public Task<ScreenPilot> CreateAsync(ScreenPilot screenPilot, CancellationToken cancellationToken = default)
+    public async Task<ScreenPilot> CreateAsync(ScreenPilot entity, CancellationToken cancellationToken = default)
     {
-        _context.ScreenPilots.Add(screenPilot);
-        // Note: SaveChanges will be called by UnitOfWork
-        return Task.FromResult(screenPilot);
+        _context.ScreenPilots.Add(entity);
+        return entity;
     }
 
-    public Task<ScreenPilot> UpdateAsync(ScreenPilot screenPilot, CancellationToken cancellationToken = default)
+    public async Task<ScreenPilot> UpdateAsync(ScreenPilot entity, CancellationToken cancellationToken = default)
     {
-        _context.ScreenPilots.Update(screenPilot);
-        // Note: SaveChanges will be called by UnitOfWork
-        return Task.FromResult(screenPilot);
+        _context.ScreenPilots.Update(entity);
+        await Task.CompletedTask;
+        return entity;
     }
 
     public async Task DeleteAsync(long id, CancellationToken cancellationToken = default)
     {
-        var entity = await _context.ScreenPilots.FindAsync(new object[] { id }, cancellationToken);
+        var entity = await GetEntityByIdAsync(id, cancellationToken);
         if (entity != null)
-        {
             _context.ScreenPilots.Remove(entity);
-            // Note: SaveChanges will be called by UnitOfWork
-        }
     }
 }

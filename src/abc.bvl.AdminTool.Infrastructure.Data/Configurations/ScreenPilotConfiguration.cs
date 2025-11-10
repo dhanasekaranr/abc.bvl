@@ -1,86 +1,25 @@
-using abc.bvl.AdminTool.Domain.Entities;
+﻿using abc.bvl.AdminTool.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace abc.bvl.AdminTool.Infrastructure.Data.Configurations;
 
-/// <summary>
-/// Entity Framework configuration for ScreenPilot entity mapping to Oracle database
-/// </summary>
 public class ScreenPilotConfiguration : IEntityTypeConfiguration<ScreenPilot>
 {
     public void Configure(EntityTypeBuilder<ScreenPilot> builder)
     {
-        // Map to Oracle table in APP_USER schema
         builder.ToTable("ADMIN_SCREENPILOT", "APP_USER");
-
-        // Primary Key
-        builder.HasKey(x => x.Id);
-        builder.Property(x => x.Id)
-            .HasColumnName("SCREENPILOTID")
-            .ValueGeneratedOnAdd();
-
-        // Business Properties
-        builder.Property(x => x.ScreenDefnId)
-            .HasColumnName("SCREENDEFNID")
-            .IsRequired();
-
-        builder.Property(x => x.UserId)
-            .HasColumnName("USERID")
-            .HasMaxLength(100)
-            .IsRequired();
-
-        builder.Property(x => x.Status)
-            .HasColumnName("STATUS")
-            .HasColumnType("NUMBER(3)")
-            .IsRequired();
-
-        builder.Property(x => x.AccessLevel)
-            .HasColumnName("ACCESSLEVEL")
-            .HasMaxLength(50);
-
-        // Audit Properties
-        builder.Property(x => x.CreatedAt)
-            .HasColumnName("CREATEDAT")
-            .IsRequired();
-
-        builder.Property(x => x.CreatedBy)
-            .HasColumnName("CREATEDBY")
-            .HasMaxLength(100)
-            .IsRequired();
-
-        builder.Property(x => x.UpdatedAt)
-            .HasColumnName("UPDATEDAT")
-            .IsRequired();
-
-        builder.Property(x => x.UpdatedBy)
-            .HasColumnName("UPDATEDBY")
-            .HasMaxLength(100)
-            .IsRequired();
-
-        builder.Property(x => x.RowVersion)
-            .HasColumnName("ROWVERSION")
-            .HasMaxLength(50)
-            .IsConcurrencyToken();
-
-        // Indexes
-        builder.HasIndex(x => new { x.ScreenDefnId, x.UserId })
-            .IsUnique()
-            .HasDatabaseName("UK_ADMIN_SCREENPILOT");
-
-        builder.HasIndex(x => x.UserId)
-            .HasDatabaseName("IX_ADMIN_SCREENPILOT_USER");
-
-        builder.HasIndex(x => x.ScreenDefnId)
-            .HasDatabaseName("IX_ADMIN_SCREENPILOT_SCREEN");
-
-        builder.HasIndex(x => x.Status)
-            .HasDatabaseName("IX_ADMIN_SCREENPILOT_STATUS");
-
-        // Relationships
-        builder.HasOne(x => x.ScreenDefinition)
-            .WithMany(x => x.ScreenPilots)
-            .HasForeignKey(x => x.ScreenDefnId)
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasKey(x => x.ScreenPilotGk);
+        builder.Property(x => x.ScreenPilotGk).HasColumnName("SCREENPILOT_GK").ValueGeneratedNever();
+        builder.Property(x => x.NbUserGk).HasColumnName("NBUSER_GK").HasColumnType("NUMBER(9)").IsRequired();
+        builder.Property(x => x.ScreenGk).HasColumnName("SCREEN_GK").HasColumnType("NUMBER(19)").IsRequired();
+        builder.Property(x => x.StatusId).HasColumnName("STATUSID").HasColumnType("NUMBER(1)").IsRequired();
+        builder.Property(x => x.DualMode).HasColumnName("DUALMODE").HasColumnType("NUMBER(1)").IsRequired();
+        builder.Property(x => x.CreatedDt).HasColumnName("CREATEDDT").IsRequired();
+        builder.Property(x => x.CreatedBy).HasColumnName("CREATEDBY").HasColumnType("NUMBER(9)").IsRequired();
+        builder.Property(x => x.UpdatedDt).HasColumnName("UPDATEDDT").IsRequired();
+        builder.Property(x => x.UpdatedBy).HasColumnName("UPDATEDBY").HasColumnType("NUMBER(9)").IsRequired();
+        builder.HasIndex(x => new { x.NbUserGk, x.ScreenGk }).IsUnique().HasDatabaseName("UK_SCREENPILOT_USER_SCREEN");
+        builder.HasOne(x => x.ScreenDefinition).WithMany(x => x.ScreenPilots).HasForeignKey(x => x.ScreenGk).OnDelete(DeleteBehavior.Cascade);
     }
 }

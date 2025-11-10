@@ -45,31 +45,31 @@ public class SecondaryDbContext : DbContext
         // ScreenDefinition
         modelBuilder.Entity<ScreenDefinition>(entity =>
         {
-            entity.ToTable("SCREENDEFN", "ADMIN");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasColumnName("SCREENDEFNID");
-            entity.Property(e => e.ScreenName).HasColumnName("SCREENNAME").HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Description).HasColumnName("DESCRIPTION").HasMaxLength(500);
-            entity.Property(e => e.Status).HasColumnName("STATUS").IsRequired();
-            entity.Property(e => e.CreatedAt).HasColumnName("CREATEDAT").IsRequired();
-            entity.Property(e => e.CreatedBy).HasColumnName("CREATEDBY").HasMaxLength(100).IsRequired();
-            entity.Property(e => e.UpdatedAt).HasColumnName("UPDATEDAT");
-            entity.Property(e => e.UpdatedBy).HasColumnName("UPDATEDBY").HasMaxLength(100);
+            entity.ToTable("ADMIN_SCREENDEFN", "CVLWEBTOOLS");
+            entity.HasKey(e => e.ScreenGk);
+            entity.Property(e => e.ScreenGk).HasColumnName("SCREEN_GK");
+            entity.Property(e => e.ScreenName).HasColumnName("SCREENNAME").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.StatusId).HasColumnName("STATUSID").IsRequired();
+            entity.Property(e => e.CreatedDt).HasColumnName("CREATEDDT").IsRequired();
+            entity.Property(e => e.CreatedBy).HasColumnName("CREATEDBY").IsRequired();
+            entity.Property(e => e.UpdatedDt).HasColumnName("UPDATEDDT");
+            entity.Property(e => e.UpdatedBy).HasColumnName("UPDATEDBY");
         });
 
         // ScreenPilot
         modelBuilder.Entity<ScreenPilot>(entity =>
         {
-            entity.ToTable("SCREENPILOT", "ADMIN");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasColumnName("SCREENPILOTID");
-            entity.Property(e => e.UserId).HasColumnName("USERID").HasMaxLength(100).IsRequired();
-            entity.Property(e => e.ScreenDefnId).HasColumnName("SCREENDEFNID").IsRequired();
-            entity.Property(e => e.Status).HasColumnName("STATUS").IsRequired();
-            entity.Property(e => e.CreatedAt).HasColumnName("CREATEDAT").IsRequired();
-            entity.Property(e => e.CreatedBy).HasColumnName("CREATEDBY").HasMaxLength(100).IsRequired();
-            entity.Property(e => e.UpdatedAt).HasColumnName("UPDATEDAT");
-            entity.Property(e => e.UpdatedBy).HasColumnName("UPDATEDBY").HasMaxLength(100);
+            entity.ToTable("ADMIN_SCREENPILOT", "CVLWEBTOOLS");
+            entity.HasKey(e => e.ScreenPilotGk);
+            entity.Property(e => e.ScreenPilotGk).HasColumnName("SCREENPILOT_GK");
+            entity.Property(e => e.NbUserGk).HasColumnName("NBUSER_GK").IsRequired();
+            entity.Property(e => e.ScreenGk).HasColumnName("SCREEN_GK").IsRequired();
+            entity.Property(e => e.StatusId).HasColumnName("STATUSID").IsRequired();
+            entity.Property(e => e.DualMode).HasColumnName("DUALMODE").IsRequired();
+            entity.Property(e => e.CreatedDt).HasColumnName("CREATEDDT").IsRequired();
+            entity.Property(e => e.CreatedBy).HasColumnName("CREATEDBY").IsRequired();
+            entity.Property(e => e.UpdatedDt).HasColumnName("UPDATEDDT");
+            entity.Property(e => e.UpdatedBy).HasColumnName("UPDATEDBY");
         });
 
         // Country

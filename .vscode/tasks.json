@@ -25,6 +25,141 @@
 			],
 			"isBackground": true,
 			"group": "test"
+		},
+		{
+			"label": "Benchmark: Run All",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"-c",
+				"Release",
+				"--project",
+				"benchmarks/abc.bvl.AdminTool.Benchmarks"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Benchmark: Repository Performance",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"-c",
+				"Release",
+				"--project",
+				"benchmarks/abc.bvl.AdminTool.Benchmarks",
+				"--",
+				"--filter",
+				"*RepositoryBenchmarks*"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Benchmark: Pagination Performance",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"-c",
+				"Release",
+				"--project",
+				"benchmarks/abc.bvl.AdminTool.Benchmarks",
+				"--",
+				"--filter",
+				"*PaginationBenchmarks*"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Benchmark: List Available",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"-c",
+				"Release",
+				"--project",
+				"benchmarks/abc.bvl.AdminTool.Benchmarks",
+				"--",
+				"--list",
+				"flat"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Benchmark: Oracle (Real Database)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"-c",
+				"Release",
+				"--project",
+				"benchmarks/abc.bvl.AdminTool.Benchmarks",
+				"--",
+				"--filter",
+				"*OracleBenchmarks*"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Benchmark: In-Memory vs Oracle Comparison",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"-c",
+				"Release",
+				"--project",
+				"benchmarks/abc.bvl.AdminTool.Benchmarks",
+				"--",
+				"--filter",
+				"*PaginatedGroupQuery*"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
 		}
 	]
 }

@@ -1,5 +1,5 @@
+using abc.bvl.AdminTool.Application.Common.Models;
 using abc.bvl.AdminTool.Contracts.Common;
-using abc.bvl.AdminTool.Contracts.ScreenDefinition;
 using ScreenDefinitionEntity = abc.bvl.AdminTool.Domain.Entities.ScreenDefinition;
 
 namespace abc.bvl.AdminTool.Application.Common.Interfaces;

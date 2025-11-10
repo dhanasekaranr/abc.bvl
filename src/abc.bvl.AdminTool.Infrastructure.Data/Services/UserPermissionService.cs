@@ -113,9 +113,12 @@ public class UserPermissionService : IUserPermissionService
         */
 
         // Placeholder: Check if user exists in ScreenPilots (has been assigned screens)
-        var hasAccess = await _context.ScreenPilots
-            .AnyAsync(sp => sp.UserId == userId && sp.Status == 1, cancellationToken);
-
+        if (long.TryParse(userId, out var userGk))
+        {
+            var hasAccess = await _context.ScreenPilots
+                .AnyAsync(sp => sp.NbUserGk == userGk && sp.StatusId == 1, cancellationToken);
+        }
+        
         // Or always allow for now (remove in production)
         return true; // TODO: Replace with actual permission check
     }

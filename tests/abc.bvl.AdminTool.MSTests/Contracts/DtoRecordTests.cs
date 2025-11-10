@@ -1,6 +1,5 @@
 using abc.bvl.AdminTool.Contracts.Admin;
 using abc.bvl.AdminTool.Contracts.Common;
-using abc.bvl.AdminTool.Contracts.ScreenPilot;
 using FluentAssertions;
 
 namespace abc.bvl.AdminTool.MSTests.Contracts;
@@ -119,60 +118,6 @@ public class DtoRecordTests
             dto.StateName.Should().Be("Texas");
             dto.CountryCode.Should().Be("US");
             dto.CountryName.Should().Be("United States");
-        }
-    }
-
-    [TestClass]
-    public class ScreenPilotDtoTests
-    {
-        [TestMethod]
-        public void ScreenPilotDto_Constructor_ShouldSetAllProperties()
-        {
-            // Arrange
-            var now = DateTimeOffset.UtcNow;
-
-            // Act
-            var dto = new ScreenPilotDto(
-                Id: 1,
-                ScreenDefnId: 100,
-                UserId: "john.doe",
-                Status: 1,
-                UpdatedAt: now,
-                UpdatedBy: "admin",
-                RowVersion: "ABC123",
-                ScreenName: "Orders Management"
-            );
-
-            // Assert
-            dto.Id.Should().Be(1);
-            dto.ScreenDefnId.Should().Be(100);
-            dto.UserId.Should().Be("john.doe");
-            dto.Status.Should().Be(1);
-            dto.UpdatedAt.Should().Be(now);
-            dto.UpdatedBy.Should().Be("admin");
-            dto.RowVersion.Should().Be("ABC123");
-            dto.ScreenName.Should().Be("Orders Management");
-        }
-
-        [TestMethod]
-        public void ScreenPilotDto_WithNullId_ShouldSupportCreateScenario()
-        {
-            // Arrange & Act
-            var dto = new ScreenPilotDto(
-                Id: null,
-                ScreenDefnId: 100,
-                UserId: "new.user",
-                Status: 1,
-                UpdatedAt: DateTimeOffset.UtcNow,
-                UpdatedBy: "admin",
-                RowVersion: null,
-                ScreenName: "New Screen"
-            );
-
-            // Assert
-            dto.Id.Should().BeNull();
-            dto.ScreenDefnId.Should().Be(100);
-            dto.UserId.Should().Be("new.user");
         }
     }
 

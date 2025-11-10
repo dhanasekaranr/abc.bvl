@@ -1,6 +1,6 @@
 using abc.bvl.AdminTool.Application.Common.Interfaces;
+using abc.bvl.AdminTool.Application.Common.Models;
 using abc.bvl.AdminTool.Contracts.Common;
-using abc.bvl.AdminTool.Contracts.ScreenDefinition;
 using abc.bvl.AdminTool.Domain.Entities;
 using abc.bvl.AdminTool.Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
@@ -22,18 +22,20 @@ public class ScreenDefinitionRepository : IScreenDefinitionRepository
 
         if (status.HasValue)
         {
-            query = query.Where(s => s.Status == status.Value);
+            query = query.Where(s => s.StatusId == status.Value);
         }
 
         var results = await query
-            .Select(s => new ScreenDefnDto(
-                s.Id,
-                s.Name,
-                s.Status,
-                s.CreatedAt,
-                s.CreatedBy,
-                s.UpdatedAt,
-                s.UpdatedBy))
+            .Select(s => new ScreenDefnDto
+            {
+                ScreenGk = s.ScreenGk,
+                ScreenName = s.ScreenName,
+                StatusId = s.StatusId,
+                CreatedDt = s.CreatedDt,
+                CreatedBy = s.CreatedBy,
+                UpdatedDt = s.UpdatedDt,
+                UpdatedBy = s.UpdatedBy
+            })
             .ToListAsync(cancellationToken);
 
         return results;
@@ -43,15 +45,17 @@ public class ScreenDefinitionRepository : IScreenDefinitionRepository
     {
         var result = await _context.ScreenDefinitions
             .AsNoTracking()
-            .Where(s => s.Id == id)
-            .Select(s => new ScreenDefnDto(
-                s.Id,
-                s.Name,
-                s.Status,
-                s.CreatedAt,
-                s.CreatedBy,
-                s.UpdatedAt,
-                s.UpdatedBy))
+            .Where(s => s.ScreenGk == id)
+            .Select(s => new ScreenDefnDto
+            {
+                ScreenGk = s.ScreenGk,
+                ScreenName = s.ScreenName,
+                StatusId = s.StatusId,
+                CreatedDt = s.CreatedDt,
+                CreatedBy = s.CreatedBy,
+                UpdatedDt = s.UpdatedDt,
+                UpdatedBy = s.UpdatedBy
+            })
             .FirstOrDefaultAsync(cancellationToken);
 
         return result;
@@ -60,7 +64,7 @@ public class ScreenDefinitionRepository : IScreenDefinitionRepository
     public async Task<ScreenDefinition?> GetEntityByIdAsync(long id, CancellationToken cancellationToken = default)
     {
         return await _context.ScreenDefinitions
-            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(s => s.ScreenGk == id, cancellationToken);
     }
 
     public async Task<ScreenDefinition> CreateAsync(ScreenDefinition screenDefinition, CancellationToken cancellationToken = default)
@@ -98,29 +102,31 @@ public class ScreenDefinitionRepository : IScreenDefinitionRepository
         // Apply status filter
         if (status.HasValue)
         {
-            query = query.Where(s => s.Status == status.Value);
+            query = query.Where(s => s.StatusId == status.Value);
         }
 
         // Apply search filter
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var search = searchTerm.Trim().ToLower();
-            query = query.Where(s => s.Name.ToLower().Contains(search));
+            query = query.Where(s => s.ScreenName.ToLower().Contains(search));
         }
 
         // Apply pagination with ordering for consistent results
         var results = await query
-            .OrderBy(s => s.Id)
+            .OrderBy(s => s.ScreenGk)
             .Skip(pagination.Skip)
             .Take(pagination.Take)
-            .Select(s => new ScreenDefnDto(
-                s.Id,
-                s.Name,
-                s.Status,
-                s.CreatedAt,
-                s.CreatedBy,
-                s.UpdatedAt,
-                s.UpdatedBy))
+            .Select(s => new ScreenDefnDto
+            {
+                ScreenGk = s.ScreenGk,
+                ScreenName = s.ScreenName,
+                StatusId = s.StatusId,
+                CreatedDt = s.CreatedDt,
+                CreatedBy = s.CreatedBy,
+                UpdatedDt = s.UpdatedDt,
+                UpdatedBy = s.UpdatedBy
+            })
             .ToListAsync(cancellationToken);
 
         return results;
@@ -136,14 +142,14 @@ public class ScreenDefinitionRepository : IScreenDefinitionRepository
         // Apply status filter
         if (status.HasValue)
         {
-            query = query.Where(s => s.Status == status.Value);
+            query = query.Where(s => s.StatusId == status.Value);
         }
 
         // Apply search filter
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var search = searchTerm.Trim().ToLower();
-            query = query.Where(s => s.Name.ToLower().Contains(search));
+            query = query.Where(s => s.ScreenName.ToLower().Contains(search));
         }
 
         return await query.CountAsync(cancellationToken);

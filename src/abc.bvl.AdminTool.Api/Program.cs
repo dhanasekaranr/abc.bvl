@@ -1,4 +1,3 @@
-using abc.bvl.AdminTool.Application.ScreenDefinition.Queries;
 using abc.bvl.AdminTool.Application.Common.Interfaces;
 using abc.bvl.AdminTool.Infrastructure.Data.Context;
 using abc.bvl.AdminTool.Infrastructure.Data.Services;
@@ -7,13 +6,11 @@ using abc.bvl.AdminTool.Infrastructure.Replication.Extensions;
 using abc.bvl.AdminTool.Api.Configuration;
 using abc.bvl.AdminTool.Api.Services;
 using abc.bvl.AdminTool.Api.Middleware;
-using abc.bvl.AdminTool.Api.Validation;
 using abc.bvl.AdminTool.Api.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using FluentValidation;
 using Serilog;
 using System.Text;
 
@@ -170,14 +167,11 @@ var databaseSettings = builder.Configuration
 
 // Add MediatR with pipeline behaviors
 builder.Services.AddMediatR(cfg => {
-    cfg.RegisterServicesFromAssembly(typeof(GetScreenDefinitionsQuery).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(abc.bvl.AdminTool.Application.PilotEnablement.Queries.GetPilotEnablementsQuery).Assembly);
     
     // Add authorization pipeline behavior (runs before handlers)
     cfg.AddOpenBehavior(typeof(abc.bvl.AdminTool.Application.Common.Behaviors.AuthorizationBehavior<,>));
 });
-
-// Add FluentValidation
-builder.Services.AddValidatorsFromAssemblyContaining<ScreenDefnDtoValidator>();
 
 // Add application services
 builder.Services.AddScoped<IRequestContext, RequestContextAccessor>();
