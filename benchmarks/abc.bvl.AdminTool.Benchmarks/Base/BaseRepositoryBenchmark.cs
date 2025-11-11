@@ -30,11 +30,11 @@ public abstract class BaseRepositoryBenchmark
     [GlobalSetup]
     public async Task GlobalSetup()
     {
-        var options = new DbContextOptionsBuilder<AdminDbContext>()
+        var options = new DbContextOptionsBuilder<abc.bvl.AdminTool.Infrastructure.Data.Context.AdminDbPrimaryContext>()
             .UseInMemoryDatabase($"BenchmarkDb_{Guid.NewGuid()}")
             .Options;
 
-        Context = new AdminDbContext(options);
+        Context = new abc.bvl.AdminTool.Infrastructure.Data.Context.AdminDbPrimaryContext(options);
         
         // Seed data
         await SeedDataAsync(Context);

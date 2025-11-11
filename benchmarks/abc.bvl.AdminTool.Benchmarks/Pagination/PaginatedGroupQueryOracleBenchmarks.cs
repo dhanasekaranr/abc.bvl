@@ -39,10 +39,11 @@ public class PaginatedGroupQueryOracleBenchmarks : BaseOracleBenchmark
 
     protected override async Task SeedDataAsync(AdminDbContext context)
     {
-        // ⚠️ Oracle benchmarks use EXISTING data - no seeding required
-        // Just initialize repositories
-        _pilotRepository = new ScreenPilotRepository(context);
-        _screenRepository = new ScreenDefinitionRepository(context);
+    // ⚠️ Oracle benchmarks use EXISTING data - no seeding required
+    // Just initialize repositories
+    var contextProvider = new Benchmarks.Base.BenchmarkDbContextProvider(context);
+    _pilotRepository = new ScreenPilotRepository(contextProvider);
+    _screenRepository = new ScreenDefinitionRepository(contextProvider);
         
         // Verify we have data to work with
         var pilotCount = await context.ScreenPilots.CountAsync();

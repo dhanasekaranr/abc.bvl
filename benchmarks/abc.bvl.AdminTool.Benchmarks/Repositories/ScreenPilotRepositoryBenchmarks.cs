@@ -70,8 +70,9 @@ public class ScreenPilotRepositoryBenchmarks : BaseRepositoryBenchmark
         await context.ScreenPilots.AddRangeAsync(pilots);
         await context.SaveChangesAsync();
         
-        // Initialize repository after seeding
-        _repository = new ScreenPilotRepository(context);
+    // Initialize repository after seeding
+    var contextProvider = new Benchmarks.Base.BenchmarkDbContextProvider(context);
+    _repository = new ScreenPilotRepository(contextProvider);
     }
 
     [Benchmark(Description = "GetByUserIdAsync - Single user query")]

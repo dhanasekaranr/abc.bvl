@@ -79,9 +79,10 @@ public class PaginatedGroupQueryBenchmarks : BasePaginationBenchmark
         await context.ScreenPilots.AddRangeAsync(pilots);
         await context.SaveChangesAsync();
         
-        // Initialize repositories after seeding
-        _pilotRepository = new ScreenPilotRepository(context);
-        _screenRepository = new ScreenDefinitionRepository(context);
+    // Initialize repositories after seeding
+    var contextProvider = new Benchmarks.Base.BenchmarkDbContextProvider(context);
+    _pilotRepository = new ScreenPilotRepository(contextProvider);
+    _screenRepository = new ScreenDefinitionRepository(contextProvider);
     }
 
     [Benchmark(Baseline = true, Description = "Traditional: Load all → Group → Paginate")]

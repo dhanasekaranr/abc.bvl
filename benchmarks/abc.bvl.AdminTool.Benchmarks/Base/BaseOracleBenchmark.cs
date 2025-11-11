@@ -41,13 +41,13 @@ public abstract class BaseOracleBenchmark
     {
         SchemaPrefix = $"BM_{DateTime.Now:yyyyMMddHHmmss}";
         
-        var options = new DbContextOptionsBuilder<AdminDbContext>()
+        var options = new DbContextOptionsBuilder<abc.bvl.AdminTool.Infrastructure.Data.Context.AdminDbPrimaryContext>()
             .UseOracle(ConnectionString)
             .EnableSensitiveDataLogging(false)
             .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
             .Options;
 
-        Context = new AdminDbContext(options);
+        Context = new abc.bvl.AdminTool.Infrastructure.Data.Context.AdminDbPrimaryContext(options);
         
         try
         {
